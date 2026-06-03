@@ -87,6 +87,10 @@ euroSpriteImg.src = 'euro_sprite.png';
 const euroCentImg = new Image();
 euroCentImg.src = 'euro_cent.png';
 
+// Preload handcuffs image
+const handcuffsImg = new Image();
+handcuffsImg.src = 'handcuffs.png';
+
 
 
 // Input Management
@@ -1999,52 +2003,8 @@ class Enemy {
         }
         else if (this.type === 'bikini') {
             ctx.save();
-            ctx.rotate(this.angle);
-
-            // Silver connecting chain
-            ctx.strokeStyle = '#b0bec5';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(-12, 0);
-            ctx.lineTo(12, 0);
-            ctx.stroke();
-
-            // Link rings
-            ctx.strokeStyle = '#90a4ae';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(-8, 0, 3, 0, Math.PI * 2);
-            ctx.arc(8, 0, 3, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Fuzzy/fluffy pink cuffs
-            const cuffs = [-14, 14];
-            cuffs.forEach(cx => {
-                // Metal inner ring
-                ctx.strokeStyle = '#b0bec5';
-                ctx.lineWidth = 2.5;
-                ctx.beginPath();
-                ctx.arc(cx, 0, 10, 0, Math.PI * 2);
-                ctx.stroke();
-
-                // Fluffy pink outer cover
-                ctx.fillStyle = '#ff80ab'; // fluffy pink
-                ctx.beginPath();
-                for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
-                    const fx = cx + Math.cos(a) * 11;
-                    const fy = Math.sin(a) * 11;
-                    ctx.arc(fx, fy, 4.5, 0, Math.PI * 2);
-                }
-                ctx.fill();
-
-                // Fluffy highlight spots
-                ctx.fillStyle = '#ffb3d9';
-                ctx.beginPath();
-                ctx.arc(cx - 3, -3, 2, 0, Math.PI * 2);
-                ctx.arc(cx + 3, 3, 1.5, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
+            ctx.rotate(this.angle * 0.4);
+            ctx.drawImage(handcuffsImg, -this.radius * 1.15, -this.radius * 1.05, this.radius * 2.3, this.radius * 2.1);
             ctx.restore();
         }
         else if (this.type === 'banknote') {
