@@ -1,0 +1,3586 @@
+// Game Configuration Constants
+const ARENA_WIDTH = 1024;
+const ARENA_HEIGHT = 768;
+
+// Game State Variables
+let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
+let score = 0;
+let hiScore = localStorage.getItem('starmertron_hiscore') || 50000;
+let lives = 10; // Start with 10 lives
+let currentWave = 1;
+let waveTransitionTimer = 0;
+let shakeTime = 0;
+let shakeIntensity = 0;
+
+// Canvas Setup
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// DOM Elements for UI Updates
+const hudScore = document.getElementById('hud-score');
+const hudHiScore = document.getElementById('hud-hiscore');
+const hudLives = document.getElementById('hud-lives');
+const hudWave = document.getElementById('hud-wave');
+
+const uiOverlay = document.getElementById('ui-overlay');
+const screenStart = document.getElementById('screen-start');
+const screenGameOver = document.getElementById('screen-gameover');
+const screenPaused = document.getElementById('screen-paused');
+
+const finalScore = document.getElementById('final-score');
+const finalWave = document.getElementById('final-wave');
+
+// Buttons
+const btnStart = document.getElementById('btn-start');
+const btnRestart = document.getElementById('btn-restart');
+
+// Game Entities Arrays
+let player = null;
+let bullets = [];
+let enemyBullets = [];
+let enemies = [];
+let collectibles = [];
+let particles = [];
+
+// Preload Starmer face image
+const starmerImg = new Image();
+starmerImg.src = 'starmer_face.png';
+
+// Preload Lord wig image
+const lordWigImg = new Image();
+lordWigImg.src = 'lord_wig.png';
+
+// Preload mini-boss images
+const zackImg = new Image();
+zackImg.src = 'zack_face.png';
+
+const kemiImg = new Image();
+kemiImg.src = 'kemi_face.png';
+
+const farageImg = new Image();
+farageImg.src = 'farage_face.png';
+
+const edImg = new Image();
+edImg.src = 'ed_face.png';
+
+// Preload party logo images
+const toryLogoImg = new Image();
+toryLogoImg.src = 'tory_logo.png';
+
+const reformLogoImg = new Image();
+reformLogoImg.src = 'reform_logo.png';
+
+const greenLogoImg = new Image();
+greenLogoImg.src = 'green_logo.png';
+
+const libdemLogoImg = new Image();
+libdemLogoImg.src = 'libdem_logo.png';
+
+// Preload Mandipeter head image
+const mandipeterFaceImg = new Image();
+mandipeterFaceImg.src = 'mandipeter_face.png';
+
+// Preload Euro sprite and cent images
+const euroSpriteImg = new Image();
+euroSpriteImg.src = 'euro_sprite.png';
+
+const euroCentImg = new Image();
+euroCentImg.src = 'euro_cent.png';
+
+
+
+// Input Management
+const keys = {};
+let isStrafing = false;
+
+// Initialize HI-SCORE in UI
+hudHiScore.textContent = String(hiScore).padStart(6, '0');
+
+// Responsive Canvas Auto-Resize Logic (Responsive Bezel Fitting)
+function resizeCanvas() {
+    const rect = canvas.parentNode.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas(); // Trigger immediately to fit screen layout
+
+// Key Listeners
+window.addEventListener('keydown', (e) => {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) {
+        e.preventDefault();
+    }
+    
+    keys[e.key.toLowerCase()] = true;
+
+    if (e.key === ' ' || e.key === 'Spacebar') {
+        isStrafing = true;
+    }
+
+    // Secret Invincibility Cheat Mode (I key)
+    if (e.key.toLowerCase() === 'i') {
+        if (player) {
+            player.isInvincibleCheat = !player.isInvincibleCheat;
+            showNotification(player.isInvincibleCheat ? "INVINCIBILITY CHEAT: ON" : "INVINCIBILITY CHEAT: OFF");
+            updateLivesUI();
+        }
+    }
+
+    // Toggle Pause
+    if (e.key === 'Escape' || e.key.toLowerCase() === 'p') {
+        if (gameState === 'PLAYING') {
+            pauseGame();
+        } else if (gameState === 'PAUSED') {
+            resumeGame();
+        }
+    }
+
+    // Toggle Mute
+    if (e.key.toLowerCase() === 'm') {
+        const muted = window.audio.toggleMute();
+        showNotification(muted ? "SOUND MUTED" : "SOUND ON");
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    keys[e.key.toLowerCase()] = false;
+    
+    if (e.key === ' ' || e.key === 'Spacebar') {
+        isStrafing = false;
+    }
+});
+
+btnStart.addEventListener('click', () => {
+    window.audio.init();
+    startGame();
+});
+
+btnRestart.addEventListener('click', () => {
+    window.audio.init();
+    startGame();
+});
+
+// HUD overlay notification settings
+let notificationTimer = 0;
+let notificationText = "";
+function showNotification(text) {
+    notificationText = text;
+    notificationTimer = 110; // Slightly longer to read specific wave names
+}
+
+// ----------------------------------------------------
+// Entity Classes
+// ----------------------------------------------------
+
+class Player {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.radius = 28; 
+        this.speed = 2.4; 
+        this.facingAngle = -Math.PI / 2; // Facing UP initially
+        this.fireCooldown = 0;
+        this.fireRate = 135; 
+        this.invulnerabilityFrames = 120;
+        this.isInvincibleCheat = false; // Secret cheat mode state
+        this.isReverseFireMode = false; // Secret reverse fire state
+        this.bonusInvincibilityTimer = 0; // 3 seconds bonus invincibility (ms)
+    }
+
+    update(deltaTime) {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys['w'] || keys['arrowup']) dy -= 1;
+        if (keys['s'] || keys['arrowdown']) dy += 1;
+        if (keys['a'] || keys['arrowleft']) dx -= 1;
+        if (keys['d'] || keys['arrowright']) dx += 1;
+
+        if (dx !== 0 && dy !== 0) {
+            dx *= 0.7071;
+            dy *= 0.7071;
+        }
+
+        this.x += dx * this.speed;
+        this.y += dy * this.speed;
+
+        this.x = Math.max(this.radius + 15, Math.min(ARENA_WIDTH - this.radius - 15, this.x));
+        // Boundary y starts at 55 to clear the integrated HUD overlay
+        this.y = Math.max(this.radius + 60, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
+
+        if (!isStrafing) {
+            if (dx !== 0 || dy !== 0) {
+                this.facingAngle = Math.atan2(dy, dx);
+            }
+        }
+
+        if (this.fireCooldown <= 0) {
+            this.shoot();
+            this.fireCooldown = this.fireRate;
+        } else {
+            this.fireCooldown -= deltaTime;
+        }
+
+        if (this.invulnerabilityFrames > 0) {
+            this.invulnerabilityFrames--;
+        }
+
+        if (this.bonusInvincibilityTimer > 0) {
+            this.bonusInvincibilityTimer -= deltaTime;
+            if (this.bonusInvincibilityTimer < 0) {
+                this.bonusInvincibilityTimer = 0;
+            }
+        }
+    }
+
+    shoot() {
+        const bulletSpeed = 5.0; 
+        const shootAngle = keys['r'] ? this.facingAngle + Math.PI : this.facingAngle;
+        const bx = this.x + Math.cos(shootAngle) * 20; // Spawn closer to floating mouth
+        const by = this.y + Math.sin(shootAngle) * 20;
+        const vx = Math.cos(shootAngle) * bulletSpeed;
+        const vy = Math.sin(shootAngle) * bulletSpeed;
+
+        bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+        window.audio.playShoot();
+    }
+
+    draw() {
+        if (this.invulnerabilityFrames > 0 && Math.floor(this.invulnerabilityFrames / 6) % 2 === 0) {
+            return;
+        }
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Rainbow halo outline if invincibility cheat active or bonus active (Visual feedback)
+        if (this.isInvincibleCheat || this.bonusInvincibilityTimer > 0) {
+            ctx.save();
+            ctx.strokeStyle = `hsl(${(Date.now() / 4) % 360}, 100%, 65%)`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius + 4, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // Draw Starmer's floating head image
+        ctx.drawImage(starmerImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+
+        ctx.restore();
+    }
+}
+
+class Bullet {
+    constructor(x, y, vx, vy, origin = 'player', type = 'laser') {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 7 : (type === 'diesel_smoke' ? 14 : 4))));
+        this.origin = origin;
+        this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Feces dropping splat check on bottom border (y=748 approx)
+        if (this.type === 'dropping' && this.y >= ARENA_HEIGHT - 20) {
+            // Splat particles
+            for (let i = 0; i < 6; i++) {
+                particles.push(new Particle(this.x, ARENA_HEIGHT - 20, '#ffffff'));
+            }
+            // Trigger splat sound
+            window.audio.playPlayerDeath(); // low crash splat
+            this.y = ARENA_HEIGHT + 50; // Force cleanup out of bounds
+        }
+    }
+
+    draw() {
+        ctx.save();
+        if (this.type === 'dropping') {
+            // White splat dropping from Lib Dem bird
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Drip tail
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x, this.y - 12);
+            ctx.stroke();
+        } else if (this.type === 'brown_lump') {
+            // Lumpy organic sewage mass
+            ctx.fillStyle = '#8b5a2b';
+            ctx.strokeStyle = '#5c3818';
+            ctx.lineWidth = 1.8;
+            
+            ctx.beginPath();
+            const r = this.radius;
+            // Draw overlapping circles to form a lumpy shape
+            ctx.arc(this.x, this.y, r * 0.9, 0, Math.PI * 2);
+            ctx.arc(this.x - r * 0.3, this.y - r * 0.2, r * 0.7, 0, Math.PI * 2);
+            ctx.arc(this.x + r * 0.3, this.y + r * 0.1, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(this.x - r * 0.1, this.y + r * 0.3, r * 0.7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // texture spots
+            ctx.fillStyle = '#5c3818';
+            ctx.beginPath();
+            ctx.arc(this.x - 2, this.y - 1, 2, 0, Math.PI * 2);
+            ctx.arc(this.x + 3, this.y + 1, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'brown_peanut') {
+            // Sienna brown figure-8 lumpy poop projectile
+            const angle = Math.atan2(this.vy, this.vx);
+            ctx.translate(this.x, this.y);
+            ctx.rotate(angle);
+            
+            ctx.fillStyle = '#8b5a2b';
+            ctx.strokeStyle = '#5c3818';
+            ctx.lineWidth = 2;
+            
+            // Draw overlapping poop segments to look lumpy
+            ctx.beginPath();
+            ctx.arc(-6, -1, 7, 0, Math.PI * 2);
+            ctx.arc(0, 1, 8, 0, Math.PI * 2);
+            ctx.arc(6, -1, 6.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            // Texture spots
+            ctx.fillStyle = '#5c3818';
+            ctx.beginPath();
+            ctx.arc(-3, -2, 1.5, 0, Math.PI * 2);
+            ctx.arc(3, 2, 1.2, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'silver_coin') {
+            // Euro cent symbol dropping down
+            ctx.translate(this.x, this.y);
+            ctx.drawImage(euroCentImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+        } else if (this.type === 'diesel_smoke') {
+            // Dark diesel smoke clouds - drawn with multiple overlapping circles
+            ctx.fillStyle = 'rgba(80, 80, 80, 0.45)';
+            ctx.strokeStyle = 'rgba(50, 50, 50, 0.6)';
+            ctx.lineWidth = 1.5;
+            
+            ctx.beginPath();
+            const r = this.radius;
+            ctx.arc(this.x, this.y, r * 0.8, 0, Math.PI * 2);
+            ctx.arc(this.x - r * 0.4, this.y - r * 0.2, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(this.x + r * 0.4, this.y - r * 0.2, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(this.x - r * 0.2, this.y + r * 0.3, r * 0.6, 0, Math.PI * 2);
+            ctx.arc(this.x + r * 0.2, this.y + r * 0.3, r * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            // High speed glowing laser lines
+            ctx.beginPath();
+            const trailX = this.x - this.vx * 1.5;
+            const trailY = this.y - this.vy * 1.5;
+            
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(trailX, trailY);
+            ctx.lineCap = 'round';
+            
+            const isPlayer = this.origin === 'player';
+            ctx.strokeStyle = isPlayer ? 'rgba(0, 229, 255, 0.35)' : 'rgba(255, 42, 42, 0.35)';
+            ctx.lineWidth = 7.5;
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    isOutOfBounds() {
+        return (
+            this.x < -20 || 
+            this.x > ARENA_WIDTH + 20 || 
+            this.y < -20 || 
+            this.y > ARENA_HEIGHT + 20
+        );
+    }
+}
+
+class Enemy {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.startX = x;
+        this.startY = y;
+        this.type = type; // 'swarmer', 'bouncer', 'shooter', 'wig', 'tory', 'reform', 'green', 'libdem', 'mandipeter', 'newspaper', 'ballot_enemy'
+        this.angle = 0;
+        this.vx = 0;
+        this.vy = 0;
+        this.bobOffset = Math.random() * Math.PI * 2;
+        
+        switch (type) {
+            case 'swarmer': 
+                this.radius = 14;
+                this.speed = 1.2 + currentWave * 0.08;
+                this.hp = 1;
+                this.color = '#39ff14';
+                this.scoreValue = 150;
+                this.sineOffset = Math.random() * Math.PI * 2;
+                break;
+            case 'bouncer': 
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#bf00ff';
+                this.scoreValue = 300;
+                const angle = Math.random() * Math.PI * 2;
+                const bounceSpeed = 1.4 + currentWave * 0.1;
+                this.vx = Math.cos(angle) * bounceSpeed;
+                this.vy = Math.sin(angle) * bounceSpeed;
+                break;
+            case 'wig': 
+                this.radius = 22;
+                this.speed = 0.4 + currentWave * 0.04;
+                this.hp = 1;
+                this.color = '#e2e2e9';
+                this.scoreValue = 200;
+                this.bobOffset = Math.random() * Math.PI * 2;
+                break;
+            case 'newspaper': 
+                this.radius = 20;
+                this.speed = 0.7 + currentWave * 0.06;
+                this.hp = 1;
+                this.color = '#ffffff';
+                this.scoreValue = 180;
+                const newsAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(newsAngle) * this.speed;
+                this.vy = Math.sin(newsAngle) * this.speed;
+                break;
+            case 'ballot_enemy': 
+                this.radius = 20;
+                this.speed = 0.7 + currentWave * 0.05;
+                this.hp = 1;
+                this.color = '#ff007f';
+                this.scoreValue = 120;
+                const ballotAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ballotAngle) * this.speed;
+                this.vy = Math.sin(ballotAngle) * this.speed;
+                break;
+            case 'tory': // Conservative oak tree scribble
+                this.radius = 24;
+                this.speed = 0.6 + currentWave * 0.05;
+                this.hp = 1;
+                this.color = '#0087dc';
+                this.scoreValue = 200;
+                const toryAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(toryAngle) * this.speed;
+                this.vy = Math.sin(toryAngle) * this.speed;
+                break;
+            case 'reform': // Reform UK arrow circle
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#00d2c4';
+                this.scoreValue = 350;
+                this.state = 'aiming';
+                this.timer = 0;
+                this.vx = 0;
+                this.vy = 0;
+                break;
+            case 'green': // Green party sunflower globe
+                this.radius = 22;
+                this.speed = 0.35; // Very slowly traverse
+                this.hp = 1;
+                this.color = '#6ab023';
+                this.scoreValue = 180;
+                const greenAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(greenAngle) * this.speed;
+                this.vy = Math.sin(greenAngle) * this.speed;
+                break;
+            case 'libdem': // Yellow Lib Dem bird
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#ffd700';
+                this.scoreValue = 300;
+                this.dropTimer = 0;
+                this.vx = 2.2;
+                break;
+            case 'mandipeter': // Boss centipede segment
+                this.radius = 18;
+                this.hp = 1;
+                const blueShades = ['#00e5ff', '#00b0ff', '#2979ff', '#3d5afe', '#1a237e', '#0d47a1', '#002f6c', '#4fc3f7', '#0288d1'];
+                this.color = blueShades[Math.floor(Math.random() * blueShades.length)];
+                this.scoreValue = 200;
+                this.segmentType = 'body'; 
+                this.leader = null;
+                this.directionY = 1; 
+                break;
+            case 'sewage_tank':
+                this.radius = 45;
+                this.hp = 20;
+                this.color = '#795548';
+                this.scoreValue = 1000;
+                this.fireTimer = 0;
+                this.angle = 0;
+                this.speed = 0.4;
+                const sewageAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(sewageAngle) * this.speed;
+                this.vy = Math.sin(sewageAngle) * this.speed;
+                break;
+            case 'euro_chomper':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#3f51b5';
+                this.scoreValue = 250;
+                this.speed = 1.0 + currentWave * 0.05;
+                const ecAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ecAngle) * this.speed;
+                this.vy = Math.sin(ecAngle) * this.speed;
+                this.chompCycle = 0;
+                this.coinTimer = 2500 + Math.random() * 1500;
+                break;
+            case 'ed_davey':
+                this.radius = 48; // giant size
+                this.hp = 20; // 20 hits to kill
+                this.color = '#ffd700';
+                this.scoreValue = 1200;
+                this.swingLength = 220;
+                this.angle = 0; // bungee accumulator
+                break;
+            case 'labour_enemy':
+                this.radius = 20;
+                this.speed = 0.6 + currentWave * 0.05;
+                this.hp = 1;
+                this.color = '#e51c23';
+                this.scoreValue = 200;
+                this.fireTimer = Math.random() * 1000;
+                const labourAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(labourAngle) * this.speed;
+                this.vy = Math.sin(labourAngle) * this.speed;
+                break;
+            case 'exploding_brain':
+                this.radius = 45; // giant brain boss
+                this.hp = 20;
+                this.color = '#ff80ab';
+                this.scoreValue = 250;
+                this.speed = 0.5 + currentWave * 0.03;
+                break;
+            case 'mini_brain':
+                this.radius = 10;
+                this.hp = 1;
+                this.color = '#ff80ab';
+                this.scoreValue = 50;
+                this.speed = 2.0 + Math.random() * 1.0;
+                const mbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(mbAngle) * this.speed;
+                this.vy = Math.sin(mbAngle) * this.speed;
+                break;
+            case 'tree_trunk':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#8d6e63';
+                this.scoreValue = 150;
+                this.speed = 0.4;
+                const ttAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ttAngle) * this.speed;
+                this.vy = Math.sin(ttAngle) * this.speed;
+                break;
+            case 'cat_enemy':
+                this.radius = 18;
+                this.hp = 1;
+                this.color = '#9e9e9e'; // Grey color
+                this.scoreValue = 180;
+                this.speed = 0.7;
+                const catAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(catAngle) * this.speed;
+                this.vy = Math.sin(catAngle) * this.speed;
+                break;
+            case 'cigarette':
+                this.radius = 27; // enlarged
+                this.hp = 1;
+                this.color = '#eeeeee';
+                this.scoreValue = 150;
+                this.speed = 0.6;
+                const cigAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(cigAngle) * this.speed;
+                this.vy = Math.sin(cigAngle) * this.speed;
+                break;
+            case 'booze_enemy':
+                this.radius = 30; // enlarged
+                this.hp = 1;
+                this.color = '#4caf50';
+                this.scoreValue = 200;
+                this.speed = 0.5;
+                const boozeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(boozeAngle) * this.speed;
+                this.vy = Math.sin(boozeAngle) * this.speed;
+                break;
+            case 'candy_floss':
+                this.radius = 30; // enlarged
+                this.hp = 1;
+                this.color = '#f48fb1';
+                this.scoreValue = 150;
+                this.speed = 0.5;
+                const cfAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(cfAngle) * this.speed;
+                this.vy = Math.sin(cfAngle) * this.speed;
+                break;
+            case 'toffee_apple':
+                this.radius = 27; // enlarged
+                this.hp = 1;
+                this.color = '#e53935';
+                this.scoreValue = 180;
+                this.speed = 0.6;
+                const taAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(taAngle) * this.speed;
+                this.vy = Math.sin(taAngle) * this.speed;
+                break;
+            case 'brighton_rock':
+                this.radius = 20;
+                this.hp = 1;
+                this.color = '#e91e63';
+                this.scoreValue = 200;
+                this.speed = 0.5;
+                const brAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(brAngle) * this.speed;
+                this.vy = Math.sin(brAngle) * this.speed;
+                break;
+            case 'bikini':
+                this.radius = 27; // enlarged
+                this.hp = 1;
+                this.color = '#ff4081';
+                this.scoreValue = 150;
+                this.speed = 0.6;
+                const bikAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(bikAngle) * this.speed;
+                this.vy = Math.sin(bikAngle) * this.speed;
+                break;
+            case 'banknote':
+                this.radius = 27; // enlarged
+                this.hp = 1;
+                this.color = '#4cfc4c';
+                this.scoreValue = 180;
+                this.speed = 0.5;
+                const bnAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(bnAngle) * this.speed;
+                this.vy = Math.sin(bnAngle) * this.speed;
+                break;
+            case 'ooze_bucket':
+                this.radius = 30; // enlarged
+                this.hp = 1;
+                this.color = '#39ff14';
+                this.scoreValue = 200;
+                this.speed = 0.5;
+                const oozeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(oozeAngle) * this.speed;
+                this.vy = Math.sin(oozeAngle) * this.speed;
+                break;
+            case 'vape':
+                this.radius = 24; // Bigger Lost Mary vape
+                this.hp = 1;
+                this.color = '#bf55ec'; // Purple body
+                this.scoreValue = 150;
+                this.speed = 0.6;
+                const vapeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(vapeAngle) * this.speed;
+                this.vy = Math.sin(vapeAngle) * this.speed;
+                break;
+            case 'breakfast':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#e0f7fa'; // Plate white
+                this.scoreValue = 180;
+                this.speed = 0.5;
+                const bfAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(bfAngle) * this.speed;
+                this.vy = Math.sin(bfAngle) * this.speed;
+                break;
+            case 'tshirt':
+                this.radius = 20;
+                this.hp = 1;
+                this.color = '#e040fb'; // tie-dye purple
+                this.scoreValue = 160;
+                this.speed = 0.7;
+                const tsAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tsAngle) * this.speed;
+                this.vy = Math.sin(tsAngle) * this.speed;
+                break;
+            case 'reform_mercedes':
+                this.radius = 50;
+                this.hp = 20;
+                this.color = '#d32f2f'; // Mercedes red
+                this.scoreValue = 1500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const mercAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(mercAngle) * this.speed;
+                this.vy = Math.sin(mercAngle) * this.speed;
+                break;
+            case 'false_teeth':
+                this.radius = 35;
+                this.hp = 999;
+                this.color = '#ff4081';
+                this.scoreValue = 1500;
+                this.speed = 0.4;
+                this.angle = 0;
+                const teethAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(teethAngle) * this.speed;
+                this.vy = Math.sin(teethAngle) * this.speed;
+                break;
+            case 'prison_gate':
+                this.radius = 22;
+                this.speed = 0.5;
+                this.hp = 1;
+                this.color = '#78909c';
+                this.scoreValue = 150;
+                const pgAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(pgAngle) * this.speed;
+                this.vy = Math.sin(pgAngle) * this.speed;
+                break;
+            case 'needle':
+                this.radius = 18;
+                this.speed = 0.6;
+                this.hp = 1;
+                this.color = '#e0e0e0';
+                this.scoreValue = 180;
+                const ndAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ndAngle) * this.speed;
+                this.vy = Math.sin(ndAngle) * this.speed;
+                break;
+            case 'grad_cap':
+                this.radius = 20;
+                this.speed = 0.55;
+                this.hp = 1;
+                this.color = '#212121';
+                this.scoreValue = 160;
+                const gcAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(gcAngle) * this.speed;
+                this.vy = Math.sin(gcAngle) * this.speed;
+                break;
+            case 'padlocks':
+                this.radius = 25;
+                this.speed = 0.5;
+                this.hp = 1;
+                this.color = '#ffd700';
+                this.scoreValue = 200;
+                const plAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(plAngle) * this.speed;
+                this.vy = Math.sin(plAngle) * this.speed;
+                break;
+            case 'envelope':
+                this.radius = 16;
+                this.speed = 0.65;
+                this.hp = 1;
+                this.color = '#ffffff';
+                this.scoreValue = 120;
+                const evAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(evAngle) * this.speed;
+                this.vy = Math.sin(evAngle) * this.speed;
+                break;
+            case 'lord_wig_boss':
+                this.radius = 50; // giant boss size
+                this.hp = 20;
+                this.color = '#ffffff';
+                this.scoreValue = 1500;
+                this.speed = 0.4;
+                this.fireTimer = 0;
+                const lwbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(lwbAngle) * this.speed;
+                this.vy = Math.sin(lwbAngle) * this.speed;
+                break;
+            case 'zack_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#6ab023';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const zmbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(zmbAngle) * this.speed;
+                this.vy = Math.sin(zmbAngle) * this.speed;
+                break;
+            case 'kemi_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#0087dc';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const kmbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(kmbAngle) * this.speed;
+                this.vy = Math.sin(kmbAngle) * this.speed;
+                break;
+            case 'farage_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#00d2c4';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const fmbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(fmbAngle) * this.speed;
+                this.vy = Math.sin(fmbAngle) * this.speed;
+                break;
+            case 'ed_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#ffd700';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const embAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(embAngle) * this.speed;
+                this.vy = Math.sin(embAngle) * this.speed;
+                break;
+            case 'tooth':
+                this.radius = 10;
+                this.hp = 1;
+                this.color = '#ffffff';
+                this.scoreValue = 100;
+                this.parentBoss = null;
+                this.angleOffset = 0;
+                break;
+        }
+    }
+
+    update(deltaTime) {
+        this.angle += 0.03;
+
+        const layoutWave = ((currentWave - 1) % 18) + 1;
+
+        // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
+        if (layoutWave === 10) {
+            if (this.type === 'labour_enemy') {
+                this.fireTimer += deltaTime;
+                if (this.fireTimer > 2200) {
+                    this.fireTimer = 0;
+                    enemyBullets.push(new Bullet(this.x + 22, this.y, 2.5, 0, 'enemy'));
+                }
+                return;
+            }
+            else if (this.type === 'tory') {
+                if (!this.fireTimer) this.fireTimer = 0;
+                this.fireTimer += deltaTime;
+                if (this.fireTimer > 2200) {
+                    this.fireTimer = 0;
+                    enemyBullets.push(new Bullet(this.x - 22, this.y, -2.5, 0, 'enemy'));
+                }
+                return;
+            }
+        }
+
+        if (this.type === 'swarmer') {
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            
+            if (dist > 1) {
+                const dirX = dx / dist;
+                const dirY = dy / dist;
+                const perpX = -dirY;
+                const perpY = dirX;
+                
+                this.sineOffset += 0.06;
+                const lateralOffset = Math.sin(this.sineOffset) * 1.2;
+                
+                this.x += dirX * this.speed + perpX * lateralOffset;
+                this.y += dirY * this.speed + perpY * lateralOffset;
+            }
+        }
+        else if (this.type === 'bouncer') {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            if (this.x - this.radius <= 10) {
+                this.x = this.radius + 11;
+                this.vx *= -1;
+            } else if (this.x + this.radius >= ARENA_WIDTH - 10) {
+                this.x = ARENA_WIDTH - this.radius - 11;
+                this.vx *= -1;
+            }
+
+            if (this.y - this.radius <= 55) {
+                this.y = this.radius + 56;
+                this.vy *= -1;
+            } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
+                this.y = ARENA_HEIGHT - this.radius - 11;
+                this.vy *= -1;
+            }
+        }
+        else if (this.type === 'wig') {
+            this.bobOffset += 0.03;
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 1) {
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed + Math.sin(this.bobOffset) * 0.3;
+            }
+        }
+        else if (this.type === 'newspaper' || this.type === 'ballot_enemy') {
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            if (this.x - this.radius <= 10 || this.x + this.radius >= ARENA_WIDTH - 10) {
+                this.vx *= -1;
+            }
+            
+            if (this.y - this.radius <= 55) {
+                this.y = this.radius + 56;
+                this.vy *= -1;
+            } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
+                this.y = ARENA_HEIGHT - this.radius - 11;
+                this.vy *= -1;
+            }
+        }
+        else if (this.type === 'tory') {
+            this.bobOffset += 0.04;
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Bounce off boundaries
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            if (layoutWave === 10) {
+                if (!this.fireTimer) this.fireTimer = 0;
+                this.fireTimer += deltaTime;
+                if (this.fireTimer > 2200) {
+                    this.fireTimer = 0;
+                    enemyBullets.push(new Bullet(this.x - 22, this.y, -2.5, 0, 'enemy'));
+                }
+            }
+        }
+        else if (this.type === 'green') {
+            // Very slowly traverse around the screen, bouncing off borders
+            this.x += this.vx;
+            this.y += this.vy;
+            
+            if (this.x - this.radius <= 10) {
+                this.x = this.radius + 11;
+                this.vx = Math.abs(this.vx);
+            } else if (this.x + this.radius >= ARENA_WIDTH - 10) {
+                this.x = ARENA_WIDTH - this.radius - 11;
+                this.vx = -Math.abs(this.vx);
+            }
+            
+            if (this.y - this.radius <= 55) {
+                this.y = this.radius + 56;
+                this.vy = Math.abs(this.vy);
+            } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
+                this.y = ARENA_HEIGHT - this.radius - 11;
+                this.vy = -Math.abs(this.vy);
+            }
+        }
+        else if (this.type === 'reform') {
+            // Very slowly move towards Starmer, and rotate to point at him
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            this.targetAngle = Math.atan2(dy, dx);
+            const dist = Math.hypot(dx, dy);
+            if (dist > 1) {
+                const slowSpeed = 0.35;
+                this.x += (dx / dist) * slowSpeed;
+                this.y += (dy / dist) * slowSpeed;
+            }
+        }
+        else if (this.type === 'libdem') {
+            // Horizontal back/forth flying near top
+            this.x += this.vx;
+            
+            if (this.x - this.radius <= 10) {
+                this.x = this.radius + 11;
+                this.vx = Math.abs(this.vx);
+            } else if (this.x + this.radius >= ARENA_WIDTH - 10) {
+                this.x = ARENA_WIDTH - this.radius - 11;
+                this.vx = -Math.abs(this.vx);
+            }
+
+            // Drop white feces droppings
+            this.dropTimer += deltaTime;
+            if (this.dropTimer > 1800 + Math.random() * 800) {
+                this.dropTimer = 0;
+                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 2.8, 'enemy', 'dropping'));
+            }
+        }
+        else if (this.type === 'mandipeter') {
+            if (this.segmentType === 'head') {
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 1) {
+                    const pursueSpeed = 0.6 + currentWave * 0.02;
+                    this.x += (dx / dist) * pursueSpeed;
+                    this.y += (dy / dist) * pursueSpeed;
+                }
+            } else {
+                if (!this.leader || !enemies.includes(this.leader)) {
+                    this.segmentType = 'head';
+                    this.directionY = 1;
+                    this.leader = null;
+                    this.hp = 10; // Promoted head starts with 10 HP
+                } else {
+                    const dx = this.leader.x - this.x;
+                    const dy = this.leader.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    const targetDist = (this.leader.segmentType === 'head') ? 48 : 25;
+                    if (dist > targetDist) {
+                        this.x += (dx / dist) * (dist - targetDist);
+                        this.y += (dy / dist) * (dist - targetDist);
+                    }
+                }
+            }
+        }
+        else if (this.type === 'sewage_tank') {
+            this.angle += 0.005;
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Bounce off boundaries
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 1200) {
+                this.fireTimer = 0;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 5) {
+                    const peanutSpeed = 1.6;
+                    const vx = (dx / dist) * peanutSpeed;
+                    const vy = (dy / dist) * peanutSpeed;
+                    enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'brown_peanut'));
+                }
+            }
+        }
+        else if (this.type === 'euro_chomper') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+            this.chompCycle += 0.15;
+
+            // Coin dropping timer
+            this.coinTimer -= deltaTime;
+            if (this.coinTimer <= 0) {
+                this.coinTimer = 2500 + Math.random() * 1500;
+                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 1.5, 'enemy', 'silver_coin'));
+            }
+        }
+        else if (this.type === 'ed_davey') {
+            this.angle += 0.04;
+            this.y = 115 + (Math.sin(this.angle) * 0.5 + 0.5) * 350;
+            
+            // Bounce side to side horizontally
+            if (!this.vx) this.vx = 2.0;
+            this.x += this.vx;
+            if (this.x - this.radius <= 10) {
+                this.x = this.radius + 11;
+                this.vx = Math.abs(this.vx);
+            } else if (this.x + this.radius >= ARENA_WIDTH - 10) {
+                this.x = ARENA_WIDTH - this.radius - 11;
+                this.vx = -Math.abs(this.vx);
+            }
+
+            // Shoot targeting projectiles periodically
+            if (!this.fireTimer) this.fireTimer = 0;
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2000) {
+                this.fireTimer = 0;
+                this.shootAtPlayer();
+            }
+        }
+        else if (this.type === 'labour_enemy') {
+            this.bobOffset += 0.05;
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // Bounce off boundaries
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2200) {
+                this.fireTimer = 0;
+                if (layoutWave === 10) {
+                    // Commons Debate: shoot straight right
+                    enemyBullets.push(new Bullet(this.x + 22, this.y, 2.5, 0, 'enemy'));
+                } else {
+                    this.shootAtPlayer();
+                }
+            }
+        }
+        else if (this.type === 'exploding_brain') {
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.hypot(dx, dy);
+            if (dist > 1) {
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+            }
+        }
+        else if (this.type === 'reform_mercedes') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            // Spew cosmetic diesel smoke particles
+            if (Math.random() < 0.2) {
+                const norm = Math.hypot(this.vx, this.vy) || 1;
+                const bx = this.x - (this.vx / norm) * 45;
+                const by = this.y - (this.vy / norm) * 45;
+                particles.push(new Particle(bx, by, '#424242'));
+                particles.push(new Particle(bx, by, '#757575'));
+            }
+
+            // Firing diesel smoke cloud bullets
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 1500) {
+                this.fireTimer = 0;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 5) {
+                    const smokeSpeed = 1.2;
+                    const vx = (dx / dist) * smokeSpeed;
+                    const vy = (dy / dist) * smokeSpeed;
+                    enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'diesel_smoke'));
+                }
+            }
+        }
+        else if (this.type === 'false_teeth') {
+            this.angle += 0.012; // slowly rotate the jaw structure
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            // Destruct gums if all teeth are destroyed
+            const hasTeeth = enemies.some(e => e.type === 'tooth' && e.parentBoss === this);
+            if (!hasTeeth) {
+                enemies = enemies.filter(e => e !== this);
+                window.audio.playExplosion();
+                triggerScreenShake(8, 250);
+                score += this.scoreValue;
+                hudScore.textContent = String(score).padStart(6, '0');
+                for (let i = 0; i < 30; i++) {
+                    particles.push(new Particle(this.x, this.y, this.color));
+                }
+            }
+        }
+        else if (this.type === 'lord_wig_boss') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 3000) {
+                this.fireTimer = 0;
+                const baseAngle = Math.atan2(player.y - this.y, player.x - this.x);
+                for (let i = 0; i < 3; i++) {
+                    const angle = baseAngle + (i - 1) * 0.4;
+                    const wx = this.x + Math.cos(angle) * 55;
+                    const wy = this.y + Math.sin(angle) * 55;
+                    const smallWig = new Enemy(wx, wy, 'wig');
+                    smallWig.speed = 0.8 + Math.random() * 0.4;
+                    enemies.push(smallWig);
+                }
+                window.audio.playShoot();
+            }
+        }
+        else if (this.type === 'tooth') {
+            if (this.parentBoss && enemies.includes(this.parentBoss)) {
+                // Attached chomping radius
+                const chompRadius = 32 + Math.sin(Date.now() / 250) * 8;
+                this.x = this.parentBoss.x + Math.cos(this.parentBoss.angle + this.angleOffset) * chompRadius;
+                this.y = this.parentBoss.y + Math.sin(this.parentBoss.angle + this.angleOffset) * chompRadius;
+            } else {
+                enemies = enemies.filter(e => e !== this);
+            }
+        }
+        else if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(this.type)) {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            // Spawn colored particle trails trailing them
+            if (Math.random() < 0.35) {
+                const colors = {
+                    'zack_miniboss': '#6ab023',
+                    'kemi_miniboss': '#0087dc',
+                    'farage_miniboss': '#00d2c4',
+                    'ed_miniboss': '#ffd700'
+                };
+                particles.push(new Particle(
+                    this.x + (Math.random() - 0.5) * 15,
+                    this.y + (Math.random() - 0.5) * 15,
+                    colors[this.type] || '#ffd700'
+                ));
+            }
+
+            if (!this.fireTimer) this.fireTimer = 0;
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2500) {
+                this.fireTimer = 0;
+                this.shootAtPlayer();
+            }
+        }
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'prison_gate', 'needle', 'grad_cap', 'padlocks', 'envelope'].includes(this.type)) {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+        }
+    }
+
+    detonate() {
+        // Exploding Brain Detonation
+        enemies = enemies.filter(e => e !== this);
+        window.audio.playExplosion();
+        const numBullets = 8;
+        const speed = 2.0;
+        for (let i = 0; i < numBullets; i++) {
+            const bulletAngle = (i * Math.PI * 2) / numBullets;
+            const vx = Math.cos(bulletAngle) * speed;
+            const vy = Math.sin(bulletAngle) * speed;
+            enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
+        }
+        for (let i = 0; i < 15; i++) {
+            particles.push(new Particle(this.x, this.y, this.color));
+        }
+    }
+
+    shootAtPlayer() {
+        const dx = player.x - this.x;
+        const dy = player.y - this.y;
+        const dist = Math.hypot(dx, dy);
+        
+        if (dist > 5) {
+            const bulletSpeed = 2.4 + currentWave * 0.1;
+            const vx = (dx / dist) * bulletSpeed;
+            const vy = (dy / dist) * bulletSpeed;
+            enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.strokeStyle = this.color;
+        ctx.lineWidth = 2.5;
+
+        // Pulsating dashed gold ring around mini-bosses
+        if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(this.type)) {
+            ctx.save();
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 3;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            const ringRadius = this.radius + 6 + Math.sin(Date.now() / 100) * 2;
+            ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (this.type === 'swarmer') {
+            ctx.rotate(this.angle);
+            ctx.beginPath();
+            ctx.moveTo(0, -this.radius);
+            ctx.lineTo(this.radius * 0.8, 0);
+            ctx.lineTo(0, this.radius);
+            ctx.lineTo(-this.radius * 0.8, 0);
+            ctx.closePath();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-2, -2, 4, 4);
+        }
+        else if (this.type === 'bouncer') {
+            ctx.rotate(this.angle);
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius * 0.5, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            for (let i = 0; i < 4; i++) {
+                ctx.rotate(Math.PI / 2);
+                ctx.moveTo(this.radius * 0.5, 0);
+                ctx.lineTo(this.radius * 1.3, 0);
+            }
+            ctx.stroke();
+        }
+        else if (this.type === 'wig') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.bobOffset) * 0.08);
+            ctx.drawImage(lordWigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'newspaper') {
+            ctx.rotate(this.angle);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-20, -15, 40, 30);
+            ctx.strokeStyle = '#8c8ca3';
+            ctx.lineWidth = 1.8;
+            ctx.strokeRect(-20, -15, 40, 30);
+            
+            ctx.fillStyle = '#ff2a2a';
+            ctx.fillRect(-17, -12, 34, 6);
+            
+            ctx.fillStyle = '#444444';
+            ctx.fillRect(-17, -3, 34, 2);
+            ctx.fillRect(-17, 2, 16, 1.5);
+            ctx.fillRect(1, 2, 16, 1.5);
+            ctx.fillRect(-17, 6, 34, 1.5);
+            ctx.fillRect(-17, 10, 24, 1.5);
+        }
+        else if (this.type === 'ballot_enemy') {
+            // Chancellor's dark red briefcase
+            ctx.fillStyle = '#8b1e0f'; // Dark red/burgundy briefcase body
+            ctx.fillRect(-20, -12, 40, 26);
+            ctx.strokeStyle = '#ffd700'; // Gold border highlight
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-20, -12, 40, 26);
+            
+            // Handle at the top
+            ctx.strokeStyle = '#d4af37'; // Gold handle
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'square';
+            ctx.beginPath();
+            ctx.moveTo(-7, -12);
+            ctx.lineTo(-7, -18);
+            ctx.lineTo(7, -18);
+            ctx.lineTo(7, -12);
+            ctx.stroke();
+            
+            // Gold latches
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(-12, -12, 4, 4);
+            ctx.fillRect(8, -12, 4, 4);
+            
+            // Latch details
+            ctx.fillStyle = '#111111';
+            ctx.fillRect(-11, -10, 2, 2);
+            ctx.fillRect(9, -10, 2, 2);
+            
+            // Gold central seal
+            ctx.fillStyle = '#ffd700';
+            ctx.fillRect(-3, -2, 6, 6);
+            ctx.fillRect(-5, 0, 10, 2);
+        }
+        else if (this.type === 'tory') {
+            ctx.save();
+            ctx.translate(0, Math.sin(this.bobOffset) * 15);
+            ctx.rotate(Math.sin(this.angle * 0.5) * 0.08); // slow sway
+            ctx.drawImage(toryLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'reform') {
+            ctx.save();
+            const arrowAngle = (this.state === 'charging') ? Math.atan2(this.vy, this.vx) : this.targetAngle;
+            ctx.rotate(arrowAngle);
+            ctx.drawImage(reformLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'green') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.4);
+            ctx.drawImage(greenLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'libdem') {
+            ctx.save();
+            if (this.vx < 0) {
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(libdemLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'mandipeter') {
+            if (this.segmentType === 'head') {
+                ctx.save();
+                const wobble = Math.sin(Date.now() / 200) * 0.05;
+                ctx.rotate(wobble);
+                ctx.drawImage(mandipeterFaceImg, -this.radius * 1.5, -this.radius * 1.5, this.radius * 3, this.radius * 3);
+                ctx.restore();
+            } else {
+                ctx.save();
+                ctx.rotate(this.angle * 0.1);
+                
+                // Draw white Y-front briefs
+                ctx.fillStyle = '#ffffff';
+                ctx.strokeStyle = '#cccccc';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(-this.radius, -this.radius * 0.7); // Top-left waistband
+                ctx.lineTo(this.radius, -this.radius * 0.7);  // Top-right waistband
+                ctx.lineTo(this.radius * 0.9, -this.radius * 0.1); // Right hip
+                ctx.lineTo(this.radius * 0.3, this.radius * 0.7);  // Right crotch
+                ctx.lineTo(-this.radius * 0.3, this.radius * 0.7); // Left crotch
+                ctx.lineTo(-this.radius * 0.9, -this.radius * 0.1); // Left hip
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // waistband line detail
+                ctx.strokeStyle = '#e0e0e0';
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.moveTo(-this.radius, -this.radius * 0.6);
+                ctx.lineTo(this.radius, -this.radius * 0.6);
+                ctx.stroke();
+
+                // Y-front stitch seam lines
+                ctx.strokeStyle = '#90a4ae'; // blue-grey stitching thread
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, this.radius * 0.7);
+                ctx.lineTo(0, -this.radius * 0.1);
+                ctx.lineTo(-this.radius * 0.5, -this.radius * 0.6);
+                ctx.moveTo(0, -this.radius * 0.1);
+                ctx.lineTo(this.radius * 0.5, -this.radius * 0.6);
+                ctx.stroke();
+                
+                ctx.restore();
+            }
+        }
+        else if (this.type === 'sewage_tank') {
+            // Sewage Treatment Tank - matches photo (circular tank with rotating yellow diameter bridge)
+            ctx.rotate(this.angle);
+            
+            // Concrete outer rim
+            ctx.fillStyle = '#b0bec5';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Concrete outer wall line
+            ctx.strokeStyle = '#78909c';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Dark navy water inside
+            ctx.fillStyle = '#102a43'; // Deep dark navy
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius * 0.9, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Inner concrete lip wall
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius * 0.9, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Central concrete hub
+            ctx.fillStyle = '#cfd8dc';
+            ctx.strokeStyle = '#78909c';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Yellow diameter bridge/radial arm
+            ctx.strokeStyle = '#fbc02d'; // Yellow girder
+            ctx.lineWidth = 4.0;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.radius * 0.9, 0);
+            ctx.stroke();
+
+            // Bridge railings
+            ctx.strokeStyle = '#ffeb3b'; // Brighter yellow
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            // Left railing
+            ctx.moveTo(0, -3.5);
+            ctx.lineTo(this.radius * 0.9, -3.5);
+            // Right railing
+            ctx.moveTo(0, 3.5);
+            ctx.lineTo(this.radius * 0.9, 3.5);
+            ctx.stroke();
+
+            // White cross-braces walkway trusses
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 0.8;
+            ctx.beginPath();
+            for (let x = 6; x < this.radius * 0.9; x += 6) {
+                ctx.moveTo(x, -3.5);
+                ctx.lineTo(x, 3.5);
+            }
+            ctx.stroke();
+        }
+        else if (this.type === 'euro_chomper') {
+            const travelAngle = Math.atan2(this.vy, this.vx);
+            ctx.rotate(travelAngle);
+            ctx.save();
+            const wobble = Math.sin(this.chompCycle * 2) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(euroSpriteImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'ed_davey') {
+            // Elastic wavy yellow bungee cord (from start ceiling coordinate (startX, 55) to translated position (0, 0))
+            ctx.restore(); // Exit local translation temporarily to draw rope relative to screen
+            ctx.save();
+            ctx.strokeStyle = '#ffd700'; // Lib Dem yellow
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            const startY = 55;
+            const endY = this.y;
+            const segments = 24;
+            const stepY = (endY - startY) / segments;
+            ctx.moveTo(this.startX, startY);
+            const stepX = (this.x - this.startX) / segments;
+            for (let i = 1; i <= segments; i++) {
+                const cy = startY + i * stepY;
+                const cx = this.startX + i * stepX;
+                const amp = 8 * Math.sin((i / segments) * Math.PI * 8);
+                ctx.lineTo(cx + amp, cy);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.scale(2.0, 2.0); // Bungee Ed Davey is giant size
+
+            // Draw Ed Davey head
+            // Yellow Lib Dem T-Shirt shoulders
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            ctx.ellipse(0, 18, 18, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Face (using custom image edImg)
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 150) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(edImg, -20, -20, 40, 40);
+            ctx.restore();
+
+        }
+        else if (this.type === 'labour_enemy') {
+            // Labour Square Block Logo (drift wobble)
+            ctx.translate(Math.sin(this.bobOffset) * 20, 0);
+            ctx.fillStyle = '#e51c23'; // Labour red
+            ctx.beginPath();
+            ctx.roundRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2, 5);
+            ctx.fill();
+
+            // Draw white rose silhouette in center
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, -2, this.radius * 0.45, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Stem
+            ctx.beginPath();
+            ctx.moveTo(-1, this.radius * 0.4);
+            ctx.quadraticCurveTo(-1, 0, -3, -2);
+            ctx.lineTo(-1, -2);
+            ctx.quadraticCurveTo(1, 0, 1, this.radius * 0.4);
+            ctx.fill();
+
+            // Leaf details
+            ctx.beginPath();
+            ctx.ellipse(-5, 4, 3, 1.5, Math.PI/4, 0, Math.PI*2);
+            ctx.ellipse(4, 5, 3, 1.5, -Math.PI/4, 0, Math.PI*2);
+            ctx.fill();
+
+            // Carve petals
+            ctx.strokeStyle = '#e51c23';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(0, -2, this.radius * 0.22, 0, Math.PI, true);
+            ctx.stroke();
+        }
+        else if (this.type === 'exploding_brain' || this.type === 'mini_brain') {
+            // Apply visual vibration for psycho energy
+            ctx.save();
+            if (this.type === 'exploding_brain') {
+                const shakeX = (Math.random() - 0.5) * 4.0;
+                const shakeY = (Math.random() - 0.5) * 4.0;
+                ctx.translate(shakeX, shakeY);
+                
+                // Pulsate size of giant brain boss
+                const scale = 1.0 + Math.sin(Date.now() / 150) * 0.08;
+                ctx.scale(scale, scale);
+            } else {
+                const shakeX = (Math.random() - 0.5) * 1.5;
+                const shakeY = (Math.random() - 0.5) * 1.5;
+                ctx.translate(shakeX, shakeY);
+            }
+
+            // Draw glowing vibrating psycho-energy ring around the brain
+            ctx.save();
+            ctx.strokeStyle = `hsl(${(Date.now() / 2) % 360}, 100%, 75%)`;
+            ctx.lineWidth = this.type === 'exploding_brain' ? 2.2 : 1.2;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius + (this.type === 'exploding_brain' ? 5 : 3.2) + Math.sin(Date.now() / 25) * (this.type === 'exploding_brain' ? 3 : 1.5), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            // Wrinkled pink brain
+            ctx.fillStyle = '#ff80ab'; // pink brain
+            ctx.strokeStyle = '#c51162'; // dark pink outline
+            ctx.lineWidth = this.type === 'exploding_brain' ? 1.8 : 1.2;
+
+            // Draw two halves of brain
+            ctx.beginPath();
+            ctx.arc(-this.radius * 0.35, 0, this.radius * 0.65, 0, Math.PI * 2);
+            ctx.arc(this.radius * 0.35, 0, this.radius * 0.65, 0, Math.PI * 2);
+            ctx.arc(0, -this.radius * 0.25, this.radius * 0.65, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw wrinkles inside
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.4, -this.radius * 0.2);
+            ctx.quadraticCurveTo(-this.radius * 0.2, -this.radius * 0.5, 0, -this.radius * 0.2);
+            ctx.moveTo(this.radius * 0.4, -this.radius * 0.2);
+            ctx.quadraticCurveTo(this.radius * 0.2, -this.radius * 0.5, 0, -this.radius * 0.2);
+            
+            ctx.moveTo(-this.radius * 0.5, this.radius * 0.1);
+            ctx.quadraticCurveTo(-this.radius * 0.2, this.radius * 0.3, -this.radius * 0.1, this.radius * 0.1);
+            ctx.moveTo(this.radius * 0.5, this.radius * 0.1);
+            ctx.quadraticCurveTo(this.radius * 0.2, this.radius * 0.3, this.radius * 0.1, this.radius * 0.1);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+        else if (this.type === 'tree_trunk') {
+            ctx.save();
+            ctx.rotate(this.angle);
+
+            // Main branch (diagonal thick brown line)
+            ctx.strokeStyle = '#8d6e63'; // branch brown
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-this.radius, -this.radius * 0.2);
+            ctx.lineTo(this.radius, this.radius * 0.2);
+            ctx.stroke();
+
+            // Outline
+            ctx.strokeStyle = '#5d4037'; // dark brown outline
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(-this.radius, -this.radius * 0.2);
+            ctx.lineTo(this.radius, this.radius * 0.2);
+            ctx.stroke();
+
+            // Side twig 1
+            ctx.strokeStyle = '#8d6e63';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.2, -this.radius * 0.04);
+            ctx.quadraticCurveTo(-this.radius * 0.1, -this.radius * 0.6, this.radius * 0.3, -this.radius * 0.6);
+            ctx.stroke();
+
+            // Side twig 2
+            ctx.beginPath();
+            ctx.moveTo(this.radius * 0.3, 0.06);
+            ctx.quadraticCurveTo(this.radius * 0.4, this.radius * 0.5, this.radius * 0.7, this.radius * 0.4);
+            ctx.stroke();
+
+            // Leaves (bright green ellipses/circles)
+            ctx.fillStyle = '#4caf50'; // leaf green
+            ctx.strokeStyle = '#2e7d32'; // dark green outline
+            ctx.lineWidth = 1.0;
+
+            const leaf = (lx, ly, la) => {
+                ctx.save();
+                ctx.translate(lx, ly);
+                ctx.rotate(la);
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 7, 3.5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.restore();
+            };
+
+            leaf(this.radius * 0.3, -this.radius * 0.6, -Math.PI / 6);
+            leaf(this.radius * 0.7, this.radius * 0.4, Math.PI / 4);
+            leaf(this.radius, this.radius * 0.2, 0);
+            leaf(-this.radius * 0.5, -this.radius * 0.4, -Math.PI / 3);
+
+            ctx.restore();
+        }
+        else if (this.type === 'cat_enemy') {
+            // Grey cat head - stays upright, does not rotate, blinks slowly
+            ctx.fillStyle = '#9e9e9e'; // Grey skin
+            ctx.strokeStyle = '#616161'; // Grey outline
+            ctx.lineWidth = 2;
+
+            // Triangular ears
+            ctx.beginPath();
+            ctx.moveTo(-this.radius, -this.radius * 0.2);
+            ctx.lineTo(-this.radius * 0.9, -this.radius * 1.1);
+            ctx.lineTo(-this.radius * 0.2, -this.radius * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Ear pink insides
+            ctx.fillStyle = '#ff80ab';
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.85, -this.radius * 0.3);
+            ctx.lineTo(-this.radius * 0.8, -this.radius * 0.95);
+            ctx.lineTo(-this.radius * 0.35, -this.radius * 0.65);
+            ctx.closePath();
+            ctx.fill();
+
+            // Right ear outer
+            ctx.fillStyle = '#9e9e9e';
+            ctx.beginPath();
+            ctx.moveTo(this.radius, -this.radius * 0.2);
+            ctx.lineTo(this.radius * 0.9, -this.radius * 1.1);
+            ctx.lineTo(this.radius * 0.2, -this.radius * 0.7);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Right ear pink insides
+            ctx.fillStyle = '#ff80ab';
+            ctx.beginPath();
+            ctx.moveTo(this.radius * 0.85, -this.radius * 0.3);
+            ctx.lineTo(this.radius * 0.8, -this.radius * 0.95);
+            ctx.lineTo(this.radius * 0.35, -this.radius * 0.65);
+            ctx.closePath();
+            ctx.fill();
+
+            // Main head circle
+            ctx.fillStyle = '#9e9e9e';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius * 0.88, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Slow blinking eyes (close for 300ms every 3 seconds)
+            const blinkCycle = Date.now() % 3000;
+            const isBlinking = blinkCycle < 300;
+
+            if (isBlinking) {
+                // Closed eye lines
+                ctx.strokeStyle = '#616161';
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.moveTo(-this.radius * 0.45, -this.radius * 0.1);
+                ctx.lineTo(-this.radius * 0.15, -this.radius * 0.1);
+                ctx.moveTo(this.radius * 0.15, -this.radius * 0.1);
+                ctx.lineTo(this.radius * 0.45, -this.radius * 0.1);
+                ctx.stroke();
+            } else {
+                // Open blue eyes
+                ctx.fillStyle = '#00b0ff'; // Light blue
+                ctx.beginPath();
+                ctx.arc(-this.radius * 0.3, -this.radius * 0.1, 4, 0, Math.PI * 2);
+                ctx.arc(this.radius * 0.3, -this.radius * 0.1, 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Pupil slits
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(-this.radius * 0.3 - 0.5, -this.radius * 0.1 - 2, 1, 4);
+                ctx.fillRect(this.radius * 0.3 - 0.5, -this.radius * 0.1 - 2, 1, 4);
+            }
+
+            // Little pink nose
+            ctx.fillStyle = '#ff80ab';
+            ctx.beginPath();
+            ctx.moveTo(-2, 2);
+            ctx.lineTo(2, 2);
+            ctx.lineTo(0, 4.5);
+            ctx.closePath();
+            ctx.fill();
+
+            // Big smiling mouth
+            ctx.strokeStyle = '#616161';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 4.5, 5, 0.1, Math.PI - 0.1);
+            ctx.stroke();
+
+            // Whiskers
+            ctx.beginPath();
+            // Left
+            ctx.moveTo(-this.radius * 0.4, 4);
+            ctx.lineTo(-this.radius * 0.85, 2);
+            ctx.moveTo(-this.radius * 0.4, 5.5);
+            ctx.lineTo(-this.radius * 0.85, 7);
+            // Right
+            ctx.moveTo(this.radius * 0.4, 4);
+            ctx.lineTo(this.radius * 0.85, 2);
+            ctx.moveTo(this.radius * 0.4, 5.5);
+            ctx.lineTo(this.radius * 0.85, 7);
+            ctx.stroke();
+        }
+        else if (this.type === 'cigarette') {
+            ctx.save();
+            const originalRadius = 18;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // White cigarette cylinder with glowing orange tip
+            ctx.rotate(this.angle);
+            // White tube
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-originalRadius, -5, originalRadius * 1.3, 10);
+            ctx.strokeStyle = '#bdbdbd';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(-originalRadius, -5, originalRadius * 1.3, 10);
+
+            // Orange filter
+            ctx.fillStyle = '#fb8c00';
+            ctx.fillRect(-originalRadius, -5, originalRadius * 0.5, 10);
+
+            // Glowing tip (red/yellow/ash)
+            ctx.fillStyle = '#ff3d00'; // glowing orange-red
+            ctx.fillRect(originalRadius * 0.3, -5, originalRadius * 0.5, 10);
+            ctx.fillStyle = '#ffeb3b'; // center glow
+            ctx.fillRect(originalRadius * 0.3, -2, 3, 4);
+            
+            // Ash
+            ctx.fillStyle = '#9e9e9e';
+            ctx.fillRect(originalRadius * 0.8, -3, 3, 6);
+            ctx.restore();
+        }
+        else if (this.type === 'booze_enemy') {
+            ctx.save();
+            const originalRadius = 20;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // Green glass bottle of booze
+            ctx.rotate(this.angle);
+            ctx.fillStyle = '#2e7d32'; // Green bottle glass
+            ctx.strokeStyle = '#1b5e20';
+            ctx.lineWidth = 1.5;
+
+            // Bottle body
+            ctx.beginPath();
+            ctx.roundRect(-10, -5, 20, 24, 3);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bottle neck
+            ctx.fillRect(-4, -14, 8, 10);
+            ctx.strokeRect(-4, -14, 8, 10);
+
+            // Cork/cap
+            ctx.fillStyle = '#8d6e63';
+            ctx.fillRect(-3.5, -18, 7, 4);
+
+            // Bottle Label (White)
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-7, 0, 14, 12);
+            ctx.fillStyle = '#ff3d00'; // label text scribble
+            ctx.fillRect(-5, 3, 10, 2);
+            ctx.fillStyle = '#333333';
+            ctx.fillRect(-5, 7, 8, 1.5);
+            ctx.restore();
+        }
+        else if (this.type === 'candy_floss') {
+            ctx.save();
+            const originalRadius = 20;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // Fluffy pink candy floss on stick
+            ctx.rotate(Math.sin(this.angle * 2) * 0.08);
+            
+            // Wooden stick
+            ctx.strokeStyle = '#d7ccc8';
+            ctx.lineWidth = 3.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, originalRadius * 1.3);
+            ctx.stroke();
+
+            // Fluffy pink cotton candy cloud (overlapping arcs)
+            ctx.fillStyle = '#f48fb1'; // pink floss
+            ctx.beginPath();
+            ctx.arc(-8, -8, 11, 0, Math.PI * 2);
+            ctx.arc(8, -8, 11, 0, Math.PI * 2);
+            ctx.arc(0, 5, 11, 0, Math.PI * 2);
+            ctx.arc(-8, 3, 10, 0, Math.PI * 2);
+            ctx.arc(8, 3, 10, 0, Math.PI * 2);
+            ctx.arc(0, -14, 11, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // sugar highlights
+            ctx.fillStyle = '#ffc107';
+            ctx.beginPath();
+            ctx.arc(-3, -5, 2.2, 0, Math.PI * 2);
+            ctx.arc(4, 2, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        else if (this.type === 'toffee_apple') {
+            ctx.save();
+            const originalRadius = 18;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // Shiny red glazed apple on stick
+            ctx.rotate(Math.sin(this.angle * 2.5) * 0.06);
+
+            // Wooden stick
+            ctx.strokeStyle = '#d7ccc8';
+            ctx.lineWidth = 3.0;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(0, -originalRadius * 1.2);
+            ctx.stroke();
+
+            // Apple body
+            ctx.fillStyle = '#d50000'; // candy glaze red
+            ctx.beginPath();
+            ctx.ellipse(0, 4, originalRadius * 0.9, originalRadius * 0.85, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Highlight shine
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+            ctx.beginPath();
+            ctx.ellipse(-5, 0, 4, 2.2, Math.PI/4, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        }
+        else if (this.type === 'brighton_rock') {
+            // Striped Brighton Rock stick
+            ctx.rotate(this.angle);
+            
+            // Stick body
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-this.radius * 1.1, -6, this.radius * 2.2, 12);
+            ctx.strokeStyle = '#e91e63'; // pink ends
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-this.radius * 1.1, -6, this.radius * 2.2, 12);
+
+            // Brighton rock pink stripes
+            ctx.fillStyle = '#e91e63';
+            ctx.fillRect(-this.radius * 1.1, -6, 5, 12);
+            ctx.fillRect(this.radius * 1.1 - 5, -6, 5, 12);
+            
+            ctx.fillRect(-this.radius * 0.5, -6, 3, 12);
+            ctx.fillRect(0, -6, 3, 12);
+            ctx.fillRect(this.radius * 0.5, -6, 3, 12);
+        }
+        else if (this.type === 'bikini') {
+            ctx.save();
+            ctx.rotate(this.angle);
+
+            // Silver connecting chain
+            ctx.strokeStyle = '#b0bec5';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-12, 0);
+            ctx.lineTo(12, 0);
+            ctx.stroke();
+
+            // Link rings
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(-8, 0, 3, 0, Math.PI * 2);
+            ctx.arc(8, 0, 3, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Fuzzy/fluffy pink cuffs
+            const cuffs = [-14, 14];
+            cuffs.forEach(cx => {
+                // Metal inner ring
+                ctx.strokeStyle = '#b0bec5';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(cx, 0, 10, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Fluffy pink outer cover
+                ctx.fillStyle = '#ff80ab'; // fluffy pink
+                ctx.beginPath();
+                for (let a = 0; a < Math.PI * 2; a += Math.PI / 4) {
+                    const fx = cx + Math.cos(a) * 11;
+                    const fy = Math.sin(a) * 11;
+                    ctx.arc(fx, fy, 4.5, 0, Math.PI * 2);
+                }
+                ctx.fill();
+
+                // Fluffy highlight spots
+                ctx.fillStyle = '#ffb3d9';
+                ctx.beginPath();
+                ctx.arc(cx - 3, -3, 2, 0, Math.PI * 2);
+                ctx.arc(cx + 3, 3, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.restore();
+        }
+        else if (this.type === 'banknote') {
+            ctx.save();
+            const originalRadius = 18;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // Green currency banknote
+            ctx.rotate(this.angle);
+            ctx.fillStyle = '#81c784'; // green note
+            ctx.fillRect(-originalRadius * 1.1, -originalRadius * 0.6, originalRadius * 2.2, originalRadius * 1.2);
+            ctx.strokeStyle = '#2e7d32'; // dark border
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(-originalRadius * 1.1, -originalRadius * 0.6, originalRadius * 2.2, originalRadius * 1.2);
+
+            // Details inside note
+            ctx.strokeStyle = '#388e3c';
+            ctx.strokeRect(-originalRadius * 0.9, -originalRadius * 0.45, originalRadius * 1.8, originalRadius * 0.9);
+            
+            // Centered oval portrait representation
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 6, 4.5, 0, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // £ text
+            ctx.fillStyle = '#1b5e20';
+            ctx.font = 'bold 8px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('£', 0, 0);
+            ctx.restore();
+        }
+        else if (this.type === 'ooze_bucket') {
+            ctx.save();
+            const originalRadius = 20;
+            const scale = this.radius / originalRadius;
+            ctx.scale(scale, scale);
+            // Metal bucket spilling glowing green ooze
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.05);
+            ctx.fillStyle = '#78909c'; // grey bucket body
+            ctx.strokeStyle = '#455a64';
+            ctx.lineWidth = 1.8;
+
+            ctx.beginPath();
+            ctx.moveTo(-12, -7);
+            ctx.lineTo(12, -7);
+            ctx.lineTo(8, 12);
+            ctx.lineTo(-8, 12);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Bucket handle
+            ctx.beginPath();
+            ctx.arc(0, -7, 12, Math.PI, 0);
+            ctx.stroke();
+
+            // Spilling neon green ooze spilling out top and dripping
+            ctx.fillStyle = '#39ff14'; // glowing green
+            ctx.beginPath();
+            ctx.ellipse(0, -7, 12, 3, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Drip at the bottom left
+            ctx.beginPath();
+            ctx.ellipse(-6, 2, 4.5, 8, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+        else if (this.type === 'vape') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.2);
+
+            // Mouthpiece (black, offset to the left)
+            ctx.fillStyle = '#111111';
+            ctx.beginPath();
+            ctx.roundRect(-10, -21, 8, 7, 2);
+            ctx.fill();
+
+            // Gradient body (Lost Mary dual tone style: blue to pink)
+            const bodyGrad = ctx.createLinearGradient(-15, -14, 15, 14);
+            bodyGrad.addColorStop(0, '#00e5ff'); // bright cyan
+            bodyGrad.addColorStop(1, '#ff4081'); // bright hot pink
+            
+            ctx.fillStyle = bodyGrad;
+            ctx.strokeStyle = '#222222';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.roundRect(-15, -14, 30, 28, 5); // short and wide Lost Mary style
+            ctx.fill();
+            ctx.stroke();
+
+            // Top cap cover (silver/metallic)
+            ctx.fillStyle = '#cfd8dc';
+            ctx.fillRect(-15, -14, 30, 3);
+
+            // Bottom base (silver/metallic)
+            ctx.fillStyle = '#b0bec5';
+            ctx.fillRect(-15, 11, 30, 3);
+
+            // Branding text representation
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 7px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('LOST', 0, -2);
+            ctx.fillText('MARY', 0, 5);
+
+            ctx.restore();
+        }
+        else if (this.type === 'breakfast') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.1);
+            ctx.fillStyle = '#e0f7fa';
+            ctx.strokeStyle = '#b2ebf2';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.arc(0, 0, this.radius - 4, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Fried eggs
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(-7, -4, 6, 5, Math.PI/4, 0, Math.PI * 2);
+            ctx.ellipse(-2, 7, 7, 5.5, -Math.PI/6, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffd54f';
+            ctx.beginPath();
+            ctx.arc(-7, -4, 2.5, 0, Math.PI * 2);
+            ctx.arc(-2, 7, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Sausage
+            ctx.fillStyle = '#8d6e63';
+            ctx.strokeStyle = '#5d4037';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.ellipse(8, -6, 10, 4, -Math.PI/4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Bacon strips
+            ctx.strokeStyle = '#d32f2f';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(3, 4);
+            ctx.quadraticCurveTo(7, 8, 11, 4);
+            ctx.quadraticCurveTo(15, 0, 18, 5);
+            ctx.moveTo(0, -1);
+            ctx.quadraticCurveTo(4, 3, 8, -1);
+            ctx.quadraticCurveTo(12, -5, 15, 0);
+            ctx.stroke();
+            ctx.restore();
+        }
+        else if (this.type === 'tshirt') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle) * 0.12);
+
+            ctx.fillStyle = '#e040fb';
+            ctx.strokeStyle = '#aa00ff';
+            ctx.lineWidth = 2;
+            
+            ctx.beginPath();
+            ctx.moveTo(-10, -18);
+            ctx.lineTo(-20, -12);
+            ctx.lineTo(-15, -4);
+            ctx.lineTo(-10, -6);
+            ctx.lineTo(-10, 18);
+            ctx.lineTo(10, 18);
+            ctx.lineTo(10, -6);
+            ctx.lineTo(15, -4);
+            ctx.lineTo(20, -12);
+            ctx.lineTo(10, -18);
+            ctx.quadraticCurveTo(0, -14, -10, -18);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Tie-dye spiral
+            ctx.save();
+            ctx.clip();
+            const colors = ['#ff1744', '#ffea00', '#00e676', '#00b0ff', '#ff3d00'];
+            for (let r = 5; r < 35; r += 6) {
+                ctx.strokeStyle = colors[Math.floor(r / 6) % colors.length];
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.restore();
+            
+            ctx.strokeStyle = '#aa00ff';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.arc(0, -18, 10, 0.25 * Math.PI, 0.75 * Math.PI);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+        else if (this.type === 'reform_mercedes') {
+            const angle = Math.atan2(this.vy, this.vx);
+            ctx.rotate(angle);
+
+            ctx.fillStyle = '#d32f2f';
+            ctx.strokeStyle = '#1a1a1a';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.roundRect(-42, -20, 84, 40, 8);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#b71c1c';
+            ctx.beginPath();
+            ctx.roundRect(-15, -17, 40, 34, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#80deea';
+            ctx.beginPath();
+            ctx.moveTo(25, -16);
+            ctx.lineTo(25, 16);
+            ctx.lineTo(19, 14);
+            ctx.lineTo(19, -14);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(-15, -15);
+            ctx.lineTo(-15, 15);
+            ctx.lineTo(-10, 13);
+            ctx.lineTo(-10, -13);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#e0e0e0';
+            ctx.fillRect(38, -10, 5, 20);
+            ctx.strokeStyle = '#757575';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(38, -10, 5, 20);
+            
+            ctx.strokeStyle = '#bdbdbd';
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(42, -18);
+            ctx.quadraticCurveTo(44, 0, 42, 18);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffeb3b';
+            ctx.beginPath();
+            ctx.arc(38, -14, 4, 0, Math.PI * 2);
+            ctx.arc(38, 14, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.arc(28, 0, 3.5, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(28, 0); ctx.lineTo(28, -3.5);
+            ctx.moveTo(28, 0); ctx.lineTo(25, 2);
+            ctx.moveTo(28, 0); ctx.lineTo(31, 2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#212121';
+            ctx.fillRect(20, -23, 14, 4);
+            ctx.fillRect(20, 19, 14, 4);
+            ctx.fillRect(-28, -23, 14, 4);
+            ctx.fillRect(-28, 19, 14, 4);
+            
+            ctx.fillStyle = '#bdbdbd';
+            ctx.fillRect(24, -22, 6, 2);
+            ctx.fillRect(24, 20, 6, 2);
+            ctx.fillRect(-24, -22, 6, 2);
+            ctx.fillRect(-24, 20, 6, 2);
+        }
+        else if (this.type === 'false_teeth') {
+            ctx.strokeStyle = '#ff4081';
+            ctx.lineWidth = 10;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.arc(0, 0, 32, -Math.PI * 0.8, Math.PI * 0.8);
+            ctx.stroke();
+            
+            ctx.fillStyle = '#880e4f';
+            ctx.beginPath();
+            ctx.arc(0, 0, 27, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        else if (this.type === 'prison_gate') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.1); // slow rotate/wobble for movement feel
+            // Grey gate background (semi-transparent)
+            ctx.fillStyle = 'rgba(38, 50, 56, 0.4)';
+            ctx.strokeStyle = '#90a4ae'; // light grey frame
+            ctx.lineWidth = 3.0;
+            
+            // Draw gate frame (rounded rectangle)
+            ctx.beginPath();
+            ctx.roundRect(-this.radius * 0.9, -this.radius * 0.9, this.radius * 1.8, this.radius * 1.8, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            // Vertical iron bars
+            ctx.strokeStyle = '#546e7a'; // dark steel bars
+            ctx.lineWidth = 2.0;
+            const barSpacing = this.radius * 0.4;
+            ctx.beginPath();
+            for (let dx = -this.radius * 0.6; dx <= this.radius * 0.6; dx += barSpacing) {
+                ctx.moveTo(dx, -this.radius * 0.9);
+                ctx.lineTo(dx, this.radius * 0.9);
+            }
+            ctx.stroke();
+
+            // Horizontal cross bars
+            ctx.strokeStyle = '#37474f';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.9, -this.radius * 0.4);
+            ctx.lineTo(this.radius * 0.9, -this.radius * 0.4);
+            ctx.moveTo(-this.radius * 0.9, this.radius * 0.4);
+            ctx.lineTo(this.radius * 0.9, this.radius * 0.4);
+            ctx.stroke();
+
+            // Central latch detail
+            ctx.fillStyle = '#ffd700'; // gold padlock lock shape
+            ctx.fillRect(-3, -3, 6, 6);
+
+            ctx.restore();
+        }
+        else if (this.type === 'needle') {
+            ctx.save();
+            // Point needle in direction of motion plus rotation offset
+            const moveAngle = Math.atan2(this.vy, this.vx) + Math.PI / 4;
+            ctx.rotate(moveAngle);
+
+            // Syringe barrel (clear white cylinder)
+            ctx.strokeStyle = '#eceff1';
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.roundRect(-4, -12, 8, 20, 1);
+            ctx.fill();
+            ctx.stroke();
+
+            // Barrel lines (measurement markings)
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.moveTo(-4, -6); ctx.lineTo(-1, -6);
+            ctx.moveTo(-4, -2); ctx.lineTo(-1, -2);
+            ctx.moveTo(-4, 2); ctx.lineTo(-1, 2);
+            ctx.moveTo(-4, 6); ctx.lineTo(-1, 6);
+            ctx.stroke();
+
+            // Plunger (dark grey line and top thumb rest)
+            ctx.strokeStyle = '#78909c';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(0, 8);
+            ctx.lineTo(0, 14); // plunger shaft
+            ctx.moveTo(-5, 14);
+            ctx.lineTo(5, 14); // thumb rest
+            ctx.stroke();
+
+            // Needle tip (thin metallic grey line)
+            ctx.strokeStyle = '#b0bec5';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(0, -12);
+            ctx.lineTo(0, -22);
+            ctx.stroke();
+
+            // Drop of blood (at the needle tip)
+            const dripOffset = Math.sin(Date.now() / 150) * 1.5;
+            ctx.fillStyle = '#ff1744'; // Bright blood red
+            ctx.beginPath();
+            ctx.moveTo(0, -22 - dripOffset);
+            // Tear drop shape
+            ctx.bezierCurveTo(-3, -25 - dripOffset, -3, -28 - dripOffset, 0, -28 - dripOffset);
+            ctx.bezierCurveTo(3, -28 - dripOffset, 3, -25 - dripOffset, 0, -22 - dripOffset);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.restore();
+        }
+        else if (this.type === 'grad_cap') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.1); // subtle sway
+
+            // Tassel (yellow/gold) drawn behind
+            ctx.strokeStyle = '#ffd54f'; // golden tassel cord
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(0, -4);
+            ctx.quadraticCurveTo(this.radius * 0.5, -this.radius * 0.1, this.radius * 0.7, this.radius * 0.4);
+            ctx.stroke();
+            ctx.fillStyle = '#ffca28'; // tassel fringe
+            ctx.beginPath();
+            ctx.arc(this.radius * 0.7, this.radius * 0.4, 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Skull cap (base of mortarboard)
+            ctx.fillStyle = '#37474f'; // dark blue-grey skull cap
+            ctx.strokeStyle = '#212121';
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.ellipse(0, 4, this.radius * 0.5, this.radius * 0.35, 0, 0, Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Mortarboard Diamond (top flat part)
+            ctx.fillStyle = '#212121'; // charcoal black
+            ctx.strokeStyle = '#37474f';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.moveTo(0, -this.radius * 0.6); // top corner
+            ctx.lineTo(this.radius * 0.95, -this.radius * 0.1); // right corner
+            ctx.lineTo(0, this.radius * 0.4); // bottom corner
+            ctx.lineTo(-this.radius * 0.95, -this.radius * 0.1); // left corner
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Center button on top of cap
+            ctx.fillStyle = '#424242';
+            ctx.beginPath();
+            ctx.arc(0, -this.radius * 0.1, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+        else if (this.type === 'padlocks') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.08); // slow spin
+
+            const drawSinglePadlock = (tx, ty, scale = 1.0) => {
+                ctx.save();
+                ctx.translate(tx, ty);
+                ctx.scale(scale, scale);
+
+                // Shackle (silver loop)
+                ctx.strokeStyle = '#cfd8dc'; // metallic silver
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, -3, 6, Math.PI, 0); // shackle arc
+                ctx.moveTo(-6, -3); ctx.lineTo(-6, 3);
+                ctx.moveTo(6, -3); ctx.lineTo(6, 3);
+                ctx.stroke();
+
+                // Body (gold rectangular box)
+                ctx.fillStyle = '#ffd54f'; // golden yellow
+                ctx.strokeStyle = '#ffb300'; // dark gold border
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(-10, 0, 20, 14, 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Keyhole
+                ctx.fillStyle = '#212121';
+                ctx.beginPath();
+                ctx.arc(0, 5, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(-0.8, 6.5, 1.6, 4);
+
+                ctx.restore();
+            };
+
+            // Draw three overlapping locked padlocks (The Triple Lock)
+            drawSinglePadlock(-9, 4, 0.95);
+            drawSinglePadlock(9, 4, 0.95);
+            drawSinglePadlock(0, -8, 0.95);
+
+            ctx.restore();
+        }
+        else if (this.type === 'envelope') {
+            ctx.save();
+            ctx.rotate(this.angle * 0.15); // moderate spin
+
+            // White rectangular envelope body
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#b0bec5'; // light blue-grey border
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.roundRect(-this.radius * 0.95, -this.radius * 0.65, this.radius * 1.9, this.radius * 1.3, 1);
+            ctx.fill();
+            ctx.stroke();
+
+            // Flap triangles on back of envelope
+            ctx.strokeStyle = '#90a4ae';
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            ctx.moveTo(-this.radius * 0.95, -this.radius * 0.65);
+            ctx.lineTo(0, this.radius * 0.1);
+            ctx.lineTo(this.radius * 0.95, -this.radius * 0.65);
+            
+            ctx.moveTo(-this.radius * 0.95, this.radius * 0.65);
+            ctx.lineTo(0, this.radius * 0.1);
+            ctx.lineTo(this.radius * 0.95, this.radius * 0.65);
+            ctx.stroke();
+
+            // Red wax seal in the middle
+            ctx.fillStyle = '#ff1744';
+            ctx.beginPath();
+            ctx.arc(0, this.radius * 0.08, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+        else if (this.type === 'lord_wig_boss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(lordWigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'zack_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(zackImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'kemi_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(kemiImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'farage_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(farageImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'ed_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            ctx.drawImage(edImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'tooth') {
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(-5, -6, 10, 12, 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = '#f5f5f5';
+            ctx.fillRect(-3, -5, 6, 3);
+        }
+
+        ctx.restore();
+    }
+}
+
+class Collectible {
+    constructor(x, y, type) {
+        this.x = x;
+        this.y = y;
+        this.type = type; // 'xvote' or 'rose'
+        this.radius = 20; 
+        this.bobOffset = Math.random() * Math.PI * 2;
+        this.pulseSize = 0;
+
+        // Slow arbitrary drift path
+        const driftAngle = Math.random() * Math.PI * 2;
+        const driftSpeed = 0.4;
+        this.vx = Math.cos(driftAngle) * driftSpeed;
+        this.vy = Math.sin(driftAngle) * driftSpeed;
+    }
+
+    update() {
+        this.bobOffset += 0.04;
+        this.pulseSize = Math.sin(this.bobOffset) * 2;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Bounce off play boundaries
+        if (this.x - this.radius <= 15) {
+            this.x = this.radius + 16;
+            this.vx = Math.abs(this.vx);
+        } else if (this.x + this.radius >= ARENA_WIDTH - 15) {
+            this.x = ARENA_WIDTH - this.radius - 16;
+            this.vx = -Math.abs(this.vx);
+        }
+
+        if (this.y - this.radius <= 60) {
+            this.y = this.radius + 61;
+            this.vy = Math.abs(this.vy);
+        } else if (this.y + this.radius >= ARENA_HEIGHT - 15) {
+            this.y = ARENA_HEIGHT - this.radius - 16;
+            this.vy = -Math.abs(this.vy);
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y + this.pulseSize);
+
+        // 1. Pulsing Distinctive Rainbow Outline
+        ctx.save();
+        ctx.strokeStyle = `hsl(${(Date.now() / 2.5) % 360}, 100%, 65%)`;
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = `hsl(${(Date.now() / 2.5) % 360}, 100%, 65%)`;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(0, 0, this.radius + 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // 2. Draw item type
+        if (this.type === 'xvote') {
+            // Marker pen X
+            ctx.save();
+            ctx.strokeStyle = '#e51c23'; // Marker red
+            ctx.lineCap = 'round';
+            ctx.lineWidth = 6.0;
+            
+            ctx.beginPath();
+            ctx.moveTo(-10, -9);
+            ctx.quadraticCurveTo(-2, -2, 10, 10);
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.moveTo(9, -11);
+            ctx.quadraticCurveTo(1, -1, -11, 9);
+            ctx.stroke();
+            ctx.restore();
+        } else {
+            // Labour party rose logo (red square background, white rose silhouette with leaves)
+            ctx.fillStyle = '#e51c23'; // Labour red
+            ctx.beginPath();
+            ctx.roundRect(-16, -16, 32, 32, 6); // rounded square of 32x32
+            ctx.fill();
+            
+            // Draw white stem
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(-1, 16);
+            ctx.quadraticCurveTo(-1, 8, -4, 3);
+            ctx.lineTo(-2, 3);
+            ctx.quadraticCurveTo(1, 8, 1, 16);
+            ctx.fill();
+            
+            // Draw white leaves
+            ctx.beginPath();
+            ctx.ellipse(-8, 8, 5, 2.5, Math.PI / 6, 0, Math.PI * 2);
+            ctx.ellipse(7, 10, 5, 2.5, -Math.PI / 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw main white circle for flower petals
+            ctx.beginPath();
+            ctx.arc(0, -3, 8.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Carve out petals details with Labour Red lines
+            ctx.strokeStyle = '#e51c23';
+            ctx.lineWidth = 1.6;
+            ctx.lineCap = 'round';
+            // Center spiral/cup
+            ctx.beginPath();
+            ctx.arc(0, -3, 5, -Math.PI * 0.8, Math.PI * 0.8);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, -3, 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Petal divisions
+            ctx.beginPath();
+            ctx.moveTo(-5, -6);
+            ctx.lineTo(-2.5, -3);
+            ctx.moveTo(5, -6);
+            ctx.lineTo(2.5, -3);
+            ctx.moveTo(-2, 2);
+            ctx.quadraticCurveTo(-5, 0, -6, -2);
+            ctx.moveTo(2, 2);
+            ctx.quadraticCurveTo(5, 0, 6, -2);
+            ctx.stroke();
+
+            // Outer white leaf/petals at the top left/right
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(-7, -7, 4, 2.5, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.ellipse(7, -7, 4, 2.5, Math.PI / 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw line separations on top petals
+            ctx.strokeStyle = '#e51c23';
+            ctx.beginPath();
+            ctx.moveTo(-5, -5);
+            ctx.lineTo(-8, -8);
+            ctx.moveTo(5, -5);
+            ctx.lineTo(8, -8);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+}
+
+class Particle {
+    constructor(x, y, color) {
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 2.0 + 0.5;
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        
+        this.life = 1.0;
+        this.decay = Math.random() * 0.02 + 0.015;
+        this.size = Math.random() * 4 + 1.5;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vx *= 0.97;
+        this.vy *= 0.97;
+        this.life -= this.decay;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.life;
+        ctx.fillStyle = this.color;
+        
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI*2);
+        ctx.fill();
+        
+        ctx.restore();
+    }
+}
+
+// ----------------------------------------------------
+// Game Actions & Systems
+// ----------------------------------------------------
+
+function startGame() {
+    gameState = 'PLAYING';
+    
+    uiOverlay.style.display = 'none';
+    screenStart.classList.add('hidden');
+    screenStart.classList.remove('active');
+    screenGameOver.classList.add('hidden');
+    screenGameOver.classList.remove('active');
+    screenPaused.classList.add('hidden');
+    screenPaused.classList.remove('active');
+
+    score = 0;
+    lives = 10; // Start with 10 lives
+    currentWave = 1;
+    hudScore.textContent = '000000';
+    hudWave.textContent = '1';
+    updateLivesUI();
+
+    bullets = [];
+    enemyBullets = [];
+    enemies = [];
+    collectibles = [];
+    particles = [];
+
+    player = new Player(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+
+    window.audio.stopMusic();
+    window.audio.startMusic();
+
+    spawnWave();
+    
+    showNotification("WAVE 1: THE BASICS");
+}
+
+function spawnWave() {
+    enemies = [];
+    bullets = [];
+    enemyBullets = [];
+
+    const px = player ? player.x : ARENA_WIDTH / 2;
+    const py = player ? player.y : ARENA_HEIGHT / 2;
+    const safeRadius = 180;
+
+    const spawnEnemy = (type) => {
+        let ex, ey, dist;
+        do {
+            ex = Math.random() * (ARENA_WIDTH - 80) + 40;
+            ey = Math.random() * (ARENA_HEIGHT - 125) + 75;
+            dist = Math.hypot(ex - px, ey - py);
+        } while (dist < safeRadius);
+
+        enemies.push(new Enemy(ex, ey, type));
+    };
+
+    const layoutWave = ((currentWave - 1) % 18) + 1;
+
+    // Design waves according to user requirements
+    if (layoutWave === 1) {
+        // Wave 1 - Basic enemies: Newspapers, Chancellor briefcases
+        for (let i = 0; i < 12; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 12; i++) spawnEnemy('ballot_enemy');
+    }
+    else if (layoutWave === 2) {
+        // Wave 2 - "Tory Wave" - Tory trees + banknotes, sleaze buckets, bikinis + Kemi Badenoch mini boss
+        for (let i = 0; i < 8; i++) spawnEnemy('tory');
+        for (let i = 0; i < 4; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 3; i++) spawnEnemy('ooze_bucket');
+        for (let i = 0; i < 3; i++) spawnEnemy('bikini');
+        spawnEnemy('kemi_miniboss');
+    }
+    else if (layoutWave === 3) {
+        // Wave 3 - "Reform Invasion" - Reform arrow + cigarettes, booze, vapes, breakfast + Nigel Farage mini boss
+        for (let i = 0; i < 8; i++) spawnEnemy('reform');
+        for (let i = 0; i < 4; i++) spawnEnemy('cigarette');
+        for (let i = 0; i < 4; i++) spawnEnemy('booze_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('vape');
+        for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
+        spawnEnemy('farage_miniboss');
+    }
+    else if (layoutWave === 4) {
+        // Wave 4 - "Green Unpleasant Land" - Green logo + tree logs, tie-dye T-shirts, grey cats + Zack mini boss
+        for (let i = 0; i < 6; i++) spawnEnemy('green');
+        for (let i = 0; i < 4; i++) spawnEnemy('tree_trunk');
+        for (let i = 0; i < 3; i++) spawnEnemy('tshirt');
+        for (let i = 0; i < 3; i++) spawnEnemy('cat_enemy');
+        spawnEnemy('zack_miniboss');
+    }
+    else if (layoutWave === 5) {
+        // Wave 5 - "Liberal Democraps" - Lib Dem bird + candy floss, toffee apples, Brighton rock + Ed mini boss
+        for (let i = 0; i < 4; i++) {
+            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+            const by = 80 + Math.random() * 100;
+            const bird = new Enemy(bx, by, 'libdem');
+            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+            enemies.push(bird);
+        }
+        for (let i = 0; i < 6; i++) spawnEnemy('candy_floss');
+        for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
+        for (let i = 0; i < 5; i++) spawnEnemy('brighton_rock');
+        spawnEnemy('ed_miniboss');
+    }
+    else if (layoutWave === 6) {
+        // Wave 6 - Boss level - Mandipeter centipede
+        let lastSegment = null;
+        for (let i = 0; i < 10; i++) {
+            const sx = 150 - i * 25;
+            const sy = 120;
+            const segment = new Enemy(sx, sy, 'mandipeter');
+            
+            if (i === 0) {
+                segment.segmentType = 'head';
+                segment.vx = 2.2;
+                segment.directionY = 1;
+                segment.hp = 20; // Head starts with 20 HP
+            } else {
+                segment.segmentType = 'body';
+                segment.leader = lastSegment;
+            }
+            enemies.push(segment);
+            lastSegment = segment;
+        }
+    }
+    else if (layoutWave === 7) {
+        // Wave 7 - Circular sewage treatment tank mini boss + newspapers & briefcases
+        const boss = new Enemy(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, 'sewage_tank');
+        enemies.push(boss);
+        for (let i = 0; i < 4; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 4; i++) spawnEnemy('ballot_enemy');
+    }
+    else if (layoutWave === 8) {
+        // Wave 8 - Lords Boss - One large boss wig firing out lots of small wig enemies
+        const bossWig = new Enemy(ARENA_WIDTH / 2, 160, 'lord_wig_boss');
+        enemies.push(bossWig);
+
+        // Spawn 4 initial small wigs as guards
+        for (let i = 0; i < 4; i++) {
+            spawnEnemy('wig');
+        }
+    }
+    else if (layoutWave === 9) {
+        // Wave 9 - Ed Davey mini boss + Lib Dem birds, candy floss, toffee apples, Brighton rock
+        const boss = new Enemy(ARENA_WIDTH / 2, 160, 'ed_davey');
+        enemies.push(boss);
+        
+        for (let i = 0; i < 2; i++) {
+            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+            const by = 80 + Math.random() * 100;
+            const bird = new Enemy(bx, by, 'libdem');
+            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+            enemies.push(bird);
+        }
+        for (let i = 0; i < 2; i++) spawnEnemy('candy_floss');
+        for (let i = 0; i < 2; i++) spawnEnemy('toffee_apple');
+        for (let i = 0; i < 2; i++) spawnEnemy('brighton_rock');
+    }
+    else if (layoutWave === 10) {
+        // Wave 10 - Commons Debate block-breaker grid layout: 3 stationary rows on each side
+        if (player) {
+            player.x = ARENA_WIDTH / 2;
+            player.y = ARENA_HEIGHT / 2;
+        }
+
+        const yPositions = [100, 170, 240, 310, 380, 450, 520, 590, 660];
+
+        // Left Side (Labour): 3 Columns
+        // Front Row (x = 210) - Shields
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'ballot_enemy' : 'newspaper';
+            enemies.push(new Enemy(210, y, type));
+        });
+        // Middle Row (x = 140)
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'euro_chomper' : 'newspaper';
+            enemies.push(new Enemy(140, y, type));
+        });
+        // Back Row (x = 70) - Active Shooters
+        yPositions.forEach((y) => {
+            enemies.push(new Enemy(70, y, 'labour_enemy'));
+        });
+
+        // Right Side (Conservative): 3 Columns
+        // Front Row (x = ARENA_WIDTH - 210) - Shields
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'banknote' : 'bikini';
+            enemies.push(new Enemy(ARENA_WIDTH - 210, y, type));
+        });
+        // Middle Row (x = ARENA_WIDTH - 140)
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'ooze_bucket' : 'banknote';
+            enemies.push(new Enemy(ARENA_WIDTH - 140, y, type));
+        });
+        // Back Row (x = ARENA_WIDTH - 70) - Active Shooters
+        yPositions.forEach((y) => {
+            enemies.push(new Enemy(ARENA_WIDTH - 70, y, 'tory'));
+        });
+    }
+    else if (layoutWave === 11) {
+        // Wave 11 - Tory wave "Tory Psychodrama" - Giant Brain Boss + Tory trees, banknotes, ooze buckets, bikinis + Kemi Badenoch mini boss
+        const bossBrain = new Enemy(ARENA_WIDTH / 2, 160, 'exploding_brain');
+        enemies.push(bossBrain);
+        for (let i = 0; i < 4; i++) spawnEnemy('tory');
+        for (let i = 0; i < 2; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 2; i++) spawnEnemy('ooze_bucket');
+        for (let i = 0; i < 2; i++) spawnEnemy('bikini');
+        spawnEnemy('kemi_miniboss');
+    }
+    else if (layoutWave === 12) {
+        // Wave 12 - Greens wave "Climate Catastrophe" - Green logo + tree logs, tie-dye T-shirts, grey cats + Zack mini bosses
+        for (let i = 0; i < 6; i++) spawnEnemy('green');
+        for (let i = 0; i < 6; i++) spawnEnemy('tree_trunk');
+        for (let i = 0; i < 6; i++) spawnEnemy('tshirt');
+        for (let i = 0; i < 6; i++) spawnEnemy('cat_enemy');
+        spawnEnemy('zack_miniboss');
+    }
+    else if (layoutWave === 13) {
+        // Wave 13 - Reform wave "Reform Booze-up" - Reform arrows + cigarettes, booze, vapes, breakfast + Nigel Farage mini bosses
+        for (let i = 0; i < 6; i++) spawnEnemy('reform');
+        for (let i = 0; i < 6; i++) spawnEnemy('cigarette');
+        for (let i = 0; i < 6; i++) spawnEnemy('booze_enemy');
+        for (let i = 0; i < 3; i++) spawnEnemy('vape');
+        for (let i = 0; i < 3; i++) spawnEnemy('breakfast');
+        spawnEnemy('farage_miniboss');
+    }
+    else if (layoutWave === 14) {
+        // Wave 14 - Lib Dem wave "Lib Dem Funland" with candy floss, toffee apple, Brighton rock + Ed mini bosses
+        for (let i = 0; i < 4; i++) {
+            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+            const by = 80 + Math.random() * 100;
+            const bird = new Enemy(bx, by, 'libdem');
+            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+            enemies.push(bird);
+        }
+        for (let i = 0; i < 6; i++) spawnEnemy('candy_floss');
+        for (let i = 0; i < 6; i++) spawnEnemy('toffee_apple');
+        for (let i = 0; i < 6; i++) spawnEnemy('brighton_rock');
+        spawnEnemy('ed_miniboss');
+    }
+    else if (layoutWave === 15) {
+        // Wave 15 - Tory wave "Tory Sleaze" with bikinis, wads of banknotes, buckets green ooze + Kemi Badenoch mini bosses
+        for (let i = 0; i < 6; i++) spawnEnemy('tory');
+        for (let i = 0; i < 6; i++) spawnEnemy('bikini');
+        for (let i = 0; i < 8; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 6; i++) spawnEnemy('ooze_bucket');
+        spawnEnemy('kemi_miniboss');
+    }
+    else if (layoutWave === 16) {
+        // Wave 16 - Reform Boss - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
+        const bossMerc = new Enemy(ARENA_WIDTH / 2, 160, 'reform_mercedes');
+        enemies.push(bossMerc);
+        for (let i = 0; i < 4; i++) spawnEnemy('reform');
+        for (let i = 0; i < 2; i++) spawnEnemy('cigarette');
+        for (let i = 0; i < 2; i++) spawnEnemy('booze_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('vape');
+        for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
+        spawnEnemy('farage_miniboss');
+    }
+    else if (layoutWave === 17) {
+        // Wave 17 - Greens Boss - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
+        const gums = new Enemy(ARENA_WIDTH / 2, 160, 'false_teeth');
+        enemies.push(gums);
+
+        const numTeeth = 10;
+        for (let i = 0; i < numTeeth; i++) {
+            const angle = -Math.PI * 0.7 + (i / (numTeeth - 1)) * Math.PI * 1.4;
+            const tooth = new Enemy(gums.x, gums.y, 'tooth');
+            tooth.parentBoss = gums;
+            tooth.angleOffset = angle;
+            enemies.push(tooth);
+        }
+
+        for (let i = 0; i < 4; i++) spawnEnemy('green');
+        for (let i = 0; i < 2; i++) spawnEnemy('tree_trunk');
+        for (let i = 0; i < 2; i++) spawnEnemy('tshirt');
+        for (let i = 0; i < 2; i++) spawnEnemy('cat_enemy');
+        spawnEnemy('zack_miniboss');
+    }
+    else if (layoutWave === 18) {
+        // Wave 18 - Euro chompers € symbols (Labour themed) + briefcases & newspapers
+        for (let i = 0; i < 6; i++) spawnEnemy('euro_chomper');
+        for (let i = 0; i < 3; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 3; i++) spawnEnemy('ballot_enemy');
+    }
+
+    else {
+        // Wave 19+: Endless scaling mix with party isolation (only one party logo type per wave)
+        const scalar = 1 + (currentWave - 18) * 0.15;
+        const totalParty = Math.floor(8 * scalar);
+        const totalNeutrals = Math.floor(12 * scalar);
+        
+        const partyList = ['tory', 'reform', 'green', 'libdem', 'labour_enemy'];
+        const chosenParty = partyList[Math.floor(Math.random() * partyList.length)];
+        
+        if (chosenParty === 'libdem') {
+            const numBirds = Math.min(6, 1 + Math.floor(totalParty / 3));
+            for (let i = 0; i < numBirds; i++) {
+                const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+                const by = 80 + Math.random() * 100;
+                const bird = new Enemy(bx, by, 'libdem');
+                bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+                enemies.push(bird);
+            }
+        } else {
+            for (let i = 0; i < totalParty; i++) {
+                spawnEnemy(chosenParty);
+            }
+        }
+        
+        const neutralList = ['newspaper', 'ballot_enemy'];
+        for (let i = 0; i < totalNeutrals; i++) {
+            const randNeutral = neutralList[Math.floor(Math.random() * neutralList.length)];
+            spawnEnemy(randNeutral);
+        }
+    }
+    // Scatter scandal enemies in every wave
+    const numScandalEnemies = 4 + Math.floor(currentWave / 4);
+    const scandalTypes = ['prison_gate', 'needle', 'grad_cap', 'padlocks', 'envelope'];
+    for (let i = 0; i < numScandalEnemies; i++) {
+        const randomType = scandalTypes[Math.floor(Math.random() * scandalTypes.length)];
+        spawnEnemy(randomType);
+    }
+
+    collectibles = [];
+    const numCollectibles = Math.min(2, 1 + Math.floor(currentWave / 5));
+    for (let i = 0; i < numCollectibles; i++) {
+        spawnCollectible();
+    }
+}
+
+function spawnCollectible() {
+    const cx = Math.random() * (ARENA_WIDTH - 80) + 40;
+    const cy = Math.random() * (ARENA_HEIGHT - 125) + 75;
+    const type = Math.random() > 0.4 ? 'xvote' : 'rose';
+    collectibles.push(new Collectible(cx, cy, type));
+}
+
+function updateLivesUI() {
+    hudLives.innerHTML = '';
+    for (let i = 0; i < lives; i++) {
+        hudLives.innerHTML += '♥';
+    }
+    if (player && player.isInvincibleCheat) {
+        hudLives.innerHTML += ' <span style="animation: textFlash 0.5s infinite; color: #ffd700;">[CHEAT]</span>';
+    }
+}
+
+window.updateLivesUI = updateLivesUI;
+
+function triggerScreenShake(intensity, durationMs) {
+    shakeTime = durationMs / 16.66;
+    shakeIntensity = intensity;
+}
+
+function pauseGame() {
+    gameState = 'PAUSED';
+    uiOverlay.style.display = 'flex';
+    screenPaused.classList.remove('hidden');
+    screenPaused.classList.add('active');
+    window.audio.stopMusic();
+}
+
+function resumeGame() {
+    gameState = 'PLAYING';
+    uiOverlay.style.display = 'none';
+    screenPaused.classList.add('hidden');
+    screenPaused.classList.remove('active');
+    window.audio.startMusic();
+}
+
+function playerDeath() {
+    if (player && (player.isInvincibleCheat || player.bonusInvincibilityTimer > 0)) {
+        return;
+    }
+
+    lives--;
+    updateLivesUI();
+    triggerScreenShake(15, 600);
+    window.audio.playPlayerDeath();
+
+    for (let i = 0; i < 60; i++) {
+        particles.push(new Particle(player.x, player.y, '#00e5ff'));
+        particles.push(new Particle(player.x, player.y, '#ff2a2a'));
+    }
+
+    if (lives <= 0) {
+        gameOver();
+    } else {
+        player.x = ARENA_WIDTH / 2;
+        player.y = ARENA_HEIGHT / 2;
+        player.invulnerabilityFrames = 120;
+
+        enemies.forEach(enemy => {
+            const dist = Math.hypot(enemy.x - player.x, enemy.y - player.y);
+            if (dist < 180) {
+                const angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                enemy.x = player.x + Math.cos(angle) * 220;
+                enemy.y = player.y + Math.sin(angle) * 220;
+            }
+        });
+        showNotification("LIVES REMAINING: " + lives);
+    }
+}
+
+function gameOver() {
+    gameState = 'GAMEOVER';
+    uiOverlay.style.display = 'flex';
+    screenGameOver.classList.remove('hidden');
+    screenGameOver.classList.add('active');
+    finalScore.textContent = score;
+    finalWave.textContent = currentWave;
+    window.audio.stopMusic();
+
+    if (score > hiScore) {
+        hiScore = score;
+        localStorage.setItem('starmertron_hiscore', hiScore);
+        hudHiScore.textContent = String(hiScore).padStart(6, '0');
+        showNotification("NEW HI-SCORE!");
+    }
+}
+
+// ----------------------------------------------------
+// Main Loops and Collision Physics
+// ----------------------------------------------------
+
+let lastTime = 0;
+let accumulator = 0;
+const fixedTimeStep = 16.666; // 60 updates per second
+
+function gameLoop(timestamp) {
+    if (!lastTime) lastTime = timestamp;
+    let deltaTime = timestamp - lastTime;
+    lastTime = timestamp;
+
+    // Clamp deltaTime to avoid "spiral of death" or huge jumps when tab loses focus
+    if (deltaTime > 100) {
+        deltaTime = fixedTimeStep;
+    }
+
+    accumulator += deltaTime;
+
+    while (accumulator >= fixedTimeStep) {
+        if (gameState === 'PLAYING') {
+            updateGame(fixedTimeStep);
+        }
+        accumulator -= fixedTimeStep;
+    }
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.save();
+    const scaleX = canvas.width / ARENA_WIDTH;
+    const scaleY = canvas.height / ARENA_HEIGHT;
+    ctx.scale(scaleX, scaleY);
+
+    if (shakeTime > 0) {
+        const dx = (Math.random() * 2 - 1) * shakeIntensity;
+        const dy = (Math.random() * 2 - 1) * shakeIntensity;
+        ctx.translate(dx, dy);
+        shakeTime--;
+    }
+
+    drawArenaBoundary();
+    drawGame();
+    drawCanvasHUD();
+
+    ctx.restore();
+
+    requestAnimationFrame(gameLoop);
+}
+
+function updateGame(deltaTime) {
+    if (player) {
+        player.update(deltaTime);
+    }
+
+    bullets.forEach(bullet => bullet.update());
+    bullets = bullets.filter(bullet => !bullet.isOutOfBounds());
+
+    enemyBullets.forEach(bullet => bullet.update());
+    enemyBullets = enemyBullets.filter(bullet => !bullet.isOutOfBounds());
+
+    enemies.forEach(enemy => enemy.update(deltaTime));
+
+    collectibles.forEach(col => col.update());
+
+    particles.forEach(p => p.update());
+    particles = particles.filter(p => p.life > 0);
+
+    if (collectibles.length < 1 && Math.random() < 0.002) {
+        spawnCollectible();
+    }
+
+    checkCollisions();
+
+    if (enemies.length === 0 && waveTransitionTimer === 0) {
+        waveTransitionTimer = 150;
+        showNotification("WAVE COMPLETE! EXTRA LIFE!");
+        triggerScreenShake(5, 400);
+        lives++;
+        updateLivesUI();
+    }
+
+    if (waveTransitionTimer > 0) {
+        waveTransitionTimer--;
+        if (waveTransitionTimer === 0) {
+            currentWave++;
+            hudWave.textContent = currentWave;
+            spawnWave();
+            
+            const layoutWave = ((currentWave - 1) % 18) + 1;
+            let waveMsg = "WAVE " + currentWave;
+            if (layoutWave === 1) waveMsg = "WAVE " + currentWave + ": THE BASICS";
+            else if (layoutWave === 2) waveMsg = "WAVE " + currentWave + ": TORY WAVE";
+            else if (layoutWave === 3) waveMsg = "WAVE " + currentWave + ": REFORM INVASION";
+            else if (layoutWave === 4) waveMsg = "WAVE " + currentWave + ": GREEN UNPLEASANT LAND";
+            else if (layoutWave === 5) waveMsg = "WAVE " + currentWave + ": LIBERAL DEMOCRAPS";
+            else if (layoutWave === 6) waveMsg = "WAVE " + currentWave + ": BOSS - THE MANDIPETER";
+            else if (layoutWave === 7) waveMsg = "WAVE " + currentWave + ": SEWAGE CRISIS";
+            else if (layoutWave === 8) waveMsg = "WAVE " + currentWave + ": THE LORDS ARE REVOLTING";
+            else if (layoutWave === 9) waveMsg = "WAVE " + currentWave + ": DAVEY BUNGEE";
+            else if (layoutWave === 10) waveMsg = "WAVE " + currentWave + ": COMMONS DEBATE";
+            else if (layoutWave === 11) waveMsg = "WAVE " + currentWave + ": TORY PSYCHODRAMA";
+            else if (layoutWave === 12) waveMsg = "WAVE " + currentWave + ": CLIMATE CATASTROPHE";
+            else if (layoutWave === 13) waveMsg = "WAVE " + currentWave + ": REFORM BOOZE-UP";
+            else if (layoutWave === 14) waveMsg = "WAVE " + currentWave + ": LIB DEM FUNLAND";
+            else if (layoutWave === 15) waveMsg = "WAVE " + currentWave + ": TORY SLEAZE";
+            else if (layoutWave === 16) waveMsg = "WAVE " + currentWave + ": REFORM BOSS";
+            else if (layoutWave === 17) waveMsg = "WAVE " + currentWave + ": GREEN BOSS";
+            else if (layoutWave === 18) waveMsg = "WAVE " + currentWave + ": EURO ZONE";
+            
+            showNotification(waveMsg);
+        }
+    }
+}
+
+function collectItem(cIndex) {
+    const col = collectibles[cIndex];
+    if (!col) return;
+    
+    collectibles.splice(cIndex, 1);
+    
+    // Rose is worth 1000, X marker is worth 500
+    const points = col.type === 'rose' ? 1000 : 500;
+    score += points;
+    hudScore.textContent = String(score).padStart(6, '0');
+    
+    window.audio.playCollect();
+    
+    if (player) {
+        player.bonusInvincibilityTimer = 3000;
+        showNotification("INVINCIBLE! +3s");
+    }
+    
+    // Spawn gorgeous pulsing rainbow spark particles!
+    for (let i = 0; i < 20; i++) {
+        const hue = Math.random() * 360;
+        particles.push(new Particle(col.x, col.y, `hsl(${hue}, 100%, 60%)`));
+    }
+}
+
+function checkCollisions() {
+    if (!player) return;
+
+    // A. Player Bullets vs Enemies
+    for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+        const bullet = bullets[bIndex];
+        for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+            const enemy = enemies[eIndex];
+            const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+            
+            if (dist < bullet.radius + enemy.radius) {
+                // Mandipede head invulnerability handling
+                if (enemy.type === 'mandipeter' && enemy.segmentType === 'head') {
+                    const hasBody = enemies.some(e => e.type === 'mandipeter' && e.segmentType === 'body');
+                    if (hasBody) {
+                        bullets.splice(bIndex, 1);
+                        for (let i = 0; i < 4; i++) {
+                            particles.push(new Particle(bullet.x, bullet.y, '#00e5ff'));
+                        }
+                        break;
+                    }
+                }
+
+                bullets.splice(bIndex, 1);
+                enemy.hp--;
+                
+                for (let i = 0; i < 3; i++) {
+                    particles.push(new Particle(bullet.x, bullet.y, enemy.color));
+                }
+
+                if (enemy.hp <= 0) {
+                    if (enemy.type === 'mandipeter') {
+                        // Relink body segment to prevent splitting
+                        enemies.forEach(e => {
+                            if (e.type === 'mandipeter' && e.leader === enemy) {
+                                e.leader = enemy.leader;
+                            }
+                        });
+                    }
+                    if (enemy.type === 'exploding_brain') {
+                        enemies.splice(eIndex, 1);
+                        score += enemy.scoreValue;
+                        hudScore.textContent = String(score).padStart(6, '0');
+                        window.audio.playExplosion();
+                        triggerScreenShake(8, 250);
+                        
+                        // Spawn 6 to 8 mini brains bouncing around
+                        const numMiniBrains = 6 + Math.floor(Math.random() * 3);
+                        for (let k = 0; k < numMiniBrains; k++) {
+                            const mb = new Enemy(enemy.x, enemy.y, 'mini_brain');
+                            mb.x += (Math.random() - 0.5) * 15;
+                            mb.y += (Math.random() - 0.5) * 15;
+                            enemies.push(mb);
+                        }
+                    } else {
+                        enemies.splice(eIndex, 1);
+                        score += enemy.scoreValue;
+                        hudScore.textContent = String(score).padStart(6, '0');
+
+                        window.audio.playExplosion();
+                        triggerScreenShake(4, 150);
+
+                        const particleCount = enemy.type === 'bouncer' ? 25 : 12;
+                        for (let i = 0; i < particleCount; i++) {
+                            particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    // AA. Player Bullets vs Collectibles (Shooting bonus items)
+    for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+        const bullet = bullets[bIndex];
+        for (let cIndex = collectibles.length - 1; cIndex >= 0; cIndex--) {
+            const col = collectibles[cIndex];
+            const dist = Math.hypot(bullet.x - col.x, bullet.y - col.y);
+            
+            if (dist < bullet.radius + col.radius) {
+                bullets.splice(bIndex, 1);
+                collectItem(cIndex);
+                break; // Bullet spent
+            }
+        }
+    }
+
+    // B. Player vs Collectibles (Colliding with bonus items)
+    for (let cIndex = collectibles.length - 1; cIndex >= 0; cIndex--) {
+        const col = collectibles[cIndex];
+        const dist = Math.hypot(player.x - col.x, player.y - col.y);
+        
+        if (dist < player.radius + col.radius) {
+            collectItem(cIndex);
+        }
+    }
+
+    // C. Player vs Enemies
+    if (gameState === 'PLAYING') {
+        for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+            const enemy = enemies[eIndex];
+            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            
+             if (dist < player.radius + enemy.radius) {
+                // Enemy dies!
+                // Bosses are not killed by collision; Starmer loses life but boss remains
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(enemy.type) || (enemy.type === 'mandipeter' && enemy.segmentType === 'head');
+                if (isBoss) {
+                    for (let i = 0; i < 6; i++) {
+                        particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
+                    }
+                } else {
+                    if (enemy.type === 'mandipeter') {
+                        // Relink segments before splicing
+                        enemies.forEach(e => {
+                            if (e.type === 'mandipeter' && e.leader === enemy) {
+                                e.leader = enemy.leader;
+                            }
+                        });
+                    }
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    
+                    window.audio.playExplosion();
+                    triggerScreenShake(4, 150);
+                    
+                    const particleCount = enemy.type === 'bouncer' ? 25 : 12;
+                    for (let i = 0; i < particleCount; i++) {
+                        particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+                    }
+                }
+
+                // Starmer loses a life unless he has invincibility (cheat or bonus) or invulnerability frames active
+                if (!(player.isInvincibleCheat || player.bonusInvincibilityTimer > 0 || player.invulnerabilityFrames > 0)) {
+                    playerDeath();
+                    break; // Stop loop to prevent losing multiple lives in a single frame
+                }
+            }
+        }
+    }
+
+    // D. Player vs Enemy Bullets (Skip if cheat or bonus active)
+    if (gameState === 'PLAYING' && !(player.isInvincibleCheat || player.bonusInvincibilityTimer > 0 || player.invulnerabilityFrames > 0)) {
+        for (let bIndex = enemyBullets.length - 1; bIndex >= 0; bIndex--) {
+            const bullet = enemyBullets[bIndex];
+            const dist = Math.hypot(player.x - bullet.x, player.y - bullet.y);
+            
+            if (dist < player.radius + bullet.radius) {
+                enemyBullets.splice(bIndex, 1);
+                playerDeath();
+                break;
+            }
+        }
+    }
+}
+
+// ----------------------------------------------------
+// Rendering Functions
+// ----------------------------------------------------
+
+function drawArenaBoundary() {
+    ctx.strokeStyle = 'rgba(255, 0, 127, 0.18)';
+    ctx.lineWidth = 10;
+    ctx.strokeRect(10, 55, ARENA_WIDTH - 20, ARENA_HEIGHT - 65);
+
+    ctx.strokeStyle = '#ff007f';
+    ctx.lineWidth = 4;
+    ctx.strokeRect(10, 55, ARENA_WIDTH - 20, ARENA_HEIGHT - 65);
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
+    const spacing = 40;
+    for (let x = 40; x < ARENA_WIDTH - 20; x += spacing) {
+        for (let y = 80; y < ARENA_HEIGHT - 20; y += spacing) {
+            ctx.fillRect(x - 1, y - 1, 2, 2);
+        }
+    }
+}
+
+function drawGame() {
+    collectibles.forEach(col => col.draw());
+    enemies.forEach(enemy => enemy.draw());
+    
+    if (player) {
+        player.draw();
+    }
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    bullets.forEach(bullet => bullet.draw());
+    enemyBullets.forEach(bullet => bullet.draw());
+    particles.forEach(p => p.draw());
+    ctx.restore();
+}
+
+function drawCanvasHUD() {
+    if (notificationTimer > 0 && notificationText !== "") {
+        ctx.save();
+        ctx.font = 'normal 22px "Press Start 2P", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const alpha = Math.min(1.0, notificationTimer / 25);
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        
+        if (notificationText.startsWith('+') && player) {
+            ctx.font = 'bold 15px "Press Start 2P", monospace';
+            ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
+            ctx.fillText(notificationText, player.x, player.y - 38);
+        } else {
+            ctx.fillStyle = `rgba(0, 229, 255, ${alpha})`;
+            ctx.fillText(notificationText, ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 20);
+        }
+
+        ctx.restore();
+        notificationTimer--;
+    }
+}
+
+// ----------------------------------------------------
+// Init Loop Execution
+// ----------------------------------------------------
+requestAnimationFrame(gameLoop);

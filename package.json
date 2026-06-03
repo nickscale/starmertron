@@ -1,0 +1,10 @@
+{
+  "name": "starmertron",
+  "version": "1.0.0",
+  "description": "90s-style retro-arcade shooter featuring Starmer",
+  "scripts": {
+    "start": "npx http-server -p 8080 ./",
+    "dev": "npx http-server -p 8080 ./"
+  },
+  "dependencies": {}
+}

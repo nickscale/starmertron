@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>STARMERTRON - 90s retro-arcade shooter</title>
+    <!-- Retro Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="arcade-cabinet">
+        <!-- Cabinet Header -->
+        <div class="cabinet-marquee">
+            <h1 class="glow-text">★ STARMERTRON ★</h1>
+            <div class="subtitle">PREPARE THE POLICIES</div>
+        </div>
+
+        <div class="cabinet-body">
+            <!-- Main Screen Area with CRT filter (Fills available space) -->
+            <div class="screen-container">
+                <div class="crt-screen">
+                    <div class="scanlines"></div>
+                    <div class="crt-flicker"></div>
+                    <div class="crt-vignette"></div>
+
+                    <!-- Integrated Screen Top HUD -->
+                    <div class="screen-hud">
+                        <div class="hud-item">
+                            <span class="hud-label">SCORE:</span>
+                            <span id="hud-score" class="hud-value text-green">000000</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">HI-SCORE:</span>
+                            <span id="hud-hiscore" class="hud-value text-gold">050000</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">WAVE:</span>
+                            <span id="hud-wave" class="hud-value text-cyan">1</span>
+                        </div>
+                        <div class="hud-item">
+                            <span class="hud-label">LIVES:</span>
+                            <div id="hud-lives" class="hud-value text-red">♥♥♥♥♥♥♥♥♥♥</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Game Canvas -->
+                    <canvas id="gameCanvas"></canvas>
+
+                    <!-- Overlay UI Screens -->
+                    <div id="ui-overlay" class="overlay-container">
+                        <!-- Start Screen -->
+                        <div id="screen-start" class="screen-overlay active">
+                            <h2 class="title-logo text-flash">STARMERTRON</h2>
+                            <p class="description">THE NEON PARLIAMENT IS UNDER ATTACK!</p>
+                            <div class="controls-guide">
+                                <div><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> or <span class="key">▲</span><span class="key">▼</span><span class="key">◄</span><span class="key">►</span> to MOVE (Shoots constantly in travel direction)</div>
+                                <div>Hold <span class="key wide">SPACEBAR</span> to STRAFE (locks firing angle)</div>
+                                <div>Collect ballot boxes <span class="text-gold">✉</span> (+500) and roses <span class="text-red">🌹</span> (+1000)</div>
+                                <div>Avoid wigs, voter crosses, newspapers, and Reform arrows!</div>
+                                <div>Press <span class="key">ESC</span> to PAUSE | <span class="key">M</span> to MUTE</div>
+                            </div>
+                            <button id="btn-start" class="arcade-btn">INSERT COIN & START</button>
+                            <div class="audio-note">Warning: Contains retro synthesiser sound effects</div>
+                        </div>
+
+                        <!-- Game Over Screen -->
+                        <div id="screen-gameover" class="screen-overlay hidden">
+                            <h2 class="title-gameover text-red text-flash">GAME OVER</h2>
+                            <p class="summary-score">FINAL SCORE: <span id="final-score" class="text-gold">0</span></p>
+                            <p class="summary-wave">WAVES SURVIVED: <span id="final-wave" class="text-cyan">0</span></p>
+                            <button id="btn-restart" class="arcade-btn">PLAY AGAIN</button>
+                        </div>
+
+                        <!-- Pause Screen -->
+                        <div id="screen-paused" class="screen-overlay hidden">
+                            <h2 class="title-paused text-cyan">PAUSED</h2>
+                            <p>Press ESC to resume</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
