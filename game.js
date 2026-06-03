@@ -167,9 +167,9 @@ btnRestart.addEventListener('click', () => {
 // HUD overlay notification settings
 let notificationTimer = 0;
 let notificationText = "";
-function showNotification(text) {
+function showNotification(text, duration = 110) {
     notificationText = text;
-    notificationTimer = 110; // Slightly longer to read specific wave names
+    notificationTimer = duration; // Slightly longer to read specific wave names
 }
 
 // ----------------------------------------------------
@@ -2798,7 +2798,7 @@ function startGame() {
 
     spawnWave();
     
-    showNotification("WAVE 1: THE BASICS");
+    showNotification("WAVE 1: THE BASICS", 220);
 }
 
 function spawnWave() {
@@ -3296,7 +3296,7 @@ function updateGame(deltaTime) {
             else if (layoutWave === 17) waveMsg = "WAVE " + currentWave + ": GREEN BOSS";
             else if (layoutWave === 18) waveMsg = "WAVE " + currentWave + ": EURO ZONE";
             
-            showNotification(waveMsg);
+            showNotification(waveMsg, 220);
         }
     }
 }
