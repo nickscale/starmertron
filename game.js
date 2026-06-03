@@ -181,7 +181,7 @@ class Player {
         this.x = x;
         this.y = y;
         this.radius = 28; 
-        this.speed = 2.4; 
+        this.speed = 4.2; 
         this.facingAngle = -Math.PI / 2; // Facing UP initially
         this.fireCooldown = 0;
         this.fireRate = 135; 
@@ -238,7 +238,7 @@ class Player {
     }
 
     shoot() {
-        const bulletSpeed = 5.0; 
+        const bulletSpeed = 8.0; 
         const shootAngle = keys['r'] ? this.facingAngle + Math.PI : this.facingAngle;
         const bx = this.x + Math.cos(shootAngle) * 20; // Spawn closer to floating mouth
         const by = this.y + Math.sin(shootAngle) * 20;
@@ -553,6 +553,7 @@ class Enemy {
                 this.scoreValue = 1200;
                 this.swingLength = 220;
                 this.angle = 0; // bungee accumulator
+                this.vx = 2.0; // horizontal speed (will be scaled by 1.6 to 3.2 below)
                 break;
             case 'labour_enemy':
                 this.radius = 20;
@@ -848,6 +849,11 @@ class Enemy {
                 this.angleOffset = 0;
                 break;
         }
+
+        // Global speed scaling to make the game feel fast and arcade-like
+        if (this.speed) this.speed *= 1.6;
+        if (this.vx) this.vx *= 1.6;
+        if (this.vy) this.vy *= 1.6;
     }
 
     update(deltaTime) {
@@ -861,7 +867,7 @@ class Enemy {
                 this.fireTimer += deltaTime;
                 if (this.fireTimer > 2200) {
                     this.fireTimer = 0;
-                    enemyBullets.push(new Bullet(this.x + 22, this.y, 2.5, 0, 'enemy'));
+                    enemyBullets.push(new Bullet(this.x + 22, this.y, 4.0, 0, 'enemy'));
                 }
                 return;
             }
@@ -870,7 +876,7 @@ class Enemy {
                 this.fireTimer += deltaTime;
                 if (this.fireTimer > 2200) {
                     this.fireTimer = 0;
-                    enemyBullets.push(new Bullet(this.x - 22, this.y, -2.5, 0, 'enemy'));
+                    enemyBullets.push(new Bullet(this.x - 22, this.y, -4.0, 0, 'enemy'));
                 }
                 return;
             }
@@ -956,7 +962,7 @@ class Enemy {
                 this.fireTimer += deltaTime;
                 if (this.fireTimer > 2200) {
                     this.fireTimer = 0;
-                    enemyBullets.push(new Bullet(this.x - 22, this.y, -2.5, 0, 'enemy'));
+                    enemyBullets.push(new Bullet(this.x - 22, this.y, -4.0, 0, 'enemy'));
                 }
             }
         }
@@ -988,7 +994,7 @@ class Enemy {
             this.targetAngle = Math.atan2(dy, dx);
             const dist = Math.hypot(dx, dy);
             if (dist > 1) {
-                const slowSpeed = 0.35;
+                const slowSpeed = 0.56;
                 this.x += (dx / dist) * slowSpeed;
                 this.y += (dy / dist) * slowSpeed;
             }
@@ -1009,7 +1015,7 @@ class Enemy {
             this.dropTimer += deltaTime;
             if (this.dropTimer > 1800 + Math.random() * 800) {
                 this.dropTimer = 0;
-                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 2.8, 'enemy', 'dropping'));
+                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 4.5, 'enemy', 'dropping'));
             }
         }
         else if (this.type === 'mandipeter') {
@@ -1018,7 +1024,7 @@ class Enemy {
                 const dy = player.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist > 1) {
-                    const pursueSpeed = 0.6 + currentWave * 0.02;
+                    const pursueSpeed = (0.6 + currentWave * 0.02) * 1.6;
                     this.x += (dx / dist) * pursueSpeed;
                     this.y += (dy / dist) * pursueSpeed;
                 }
@@ -1058,7 +1064,7 @@ class Enemy {
                 const dy = player.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist > 5) {
-                    const peanutSpeed = 1.6;
+                    const peanutSpeed = 2.6;
                     const vx = (dx / dist) * peanutSpeed;
                     const vy = (dy / dist) * peanutSpeed;
                     enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'brown_peanut'));
@@ -1078,15 +1084,15 @@ class Enemy {
             this.coinTimer -= deltaTime;
             if (this.coinTimer <= 0) {
                 this.coinTimer = 2500 + Math.random() * 1500;
-                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 1.5, 'enemy', 'silver_coin'));
+                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 2.4, 'enemy', 'silver_coin'));
             }
         }
         else if (this.type === 'ed_davey') {
-            this.angle += 0.04;
+            this.angle += 0.064;
             this.y = 115 + (Math.sin(this.angle) * 0.5 + 0.5) * 350;
             
             // Bounce side to side horizontally
-            if (!this.vx) this.vx = 2.0;
+            if (!this.vx) this.vx = 3.2;
             this.x += this.vx;
             if (this.x - this.radius <= 10) {
                 this.x = this.radius + 11;
@@ -1120,7 +1126,7 @@ class Enemy {
                 this.fireTimer = 0;
                 if (layoutWave === 10) {
                     // Commons Debate: shoot straight right
-                    enemyBullets.push(new Bullet(this.x + 22, this.y, 2.5, 0, 'enemy'));
+                    enemyBullets.push(new Bullet(this.x + 22, this.y, 4.0, 0, 'enemy'));
                 } else {
                     this.shootAtPlayer();
                 }
@@ -1160,7 +1166,7 @@ class Enemy {
                 const dy = player.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist > 5) {
-                    const smokeSpeed = 1.2;
+                    const smokeSpeed = 1.9;
                     const vx = (dx / dist) * smokeSpeed;
                     const vy = (dy / dist) * smokeSpeed;
                     enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'diesel_smoke'));
@@ -1206,7 +1212,7 @@ class Enemy {
                     const wx = this.x + Math.cos(angle) * 55;
                     const wy = this.y + Math.sin(angle) * 55;
                     const smallWig = new Enemy(wx, wy, 'wig');
-                    smallWig.speed = 0.8 + Math.random() * 0.4;
+                    smallWig.speed = (0.8 + Math.random() * 0.4) * 1.6;
                     enemies.push(smallWig);
                 }
                 window.audio.playShoot();
@@ -1267,7 +1273,7 @@ class Enemy {
         enemies = enemies.filter(e => e !== this);
         window.audio.playExplosion();
         const numBullets = 8;
-        const speed = 2.0;
+        const speed = 3.2;
         for (let i = 0; i < numBullets; i++) {
             const bulletAngle = (i * Math.PI * 2) / numBullets;
             const vx = Math.cos(bulletAngle) * speed;
@@ -1285,7 +1291,7 @@ class Enemy {
         const dist = Math.hypot(dx, dy);
         
         if (dist > 5) {
-            const bulletSpeed = 2.4 + currentWave * 0.1;
+            const bulletSpeed = (2.4 + currentWave * 0.1) * 1.6;
             const vx = (dx / dist) * bulletSpeed;
             const vy = (dy / dist) * bulletSpeed;
             enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
@@ -2585,7 +2591,7 @@ class Collectible {
 
         // Slow arbitrary drift path
         const driftAngle = Math.random() * Math.PI * 2;
-        const driftSpeed = 0.4;
+        const driftSpeed = 0.65;
         this.vx = Math.cos(driftAngle) * driftSpeed;
         this.vy = Math.sin(driftAngle) * driftSpeed;
     }
