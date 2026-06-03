@@ -3544,6 +3544,15 @@ function drawCanvasHUD() {
         ctx.restore();
         notificationTimer--;
     }
+
+    // Render version number in bottom-right corner
+    ctx.save();
+    ctx.font = '8px "Press Start 2P", monospace';
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText('v1.3.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.restore();
 }
 
 // ----------------------------------------------------
