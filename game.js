@@ -2665,6 +2665,7 @@ class Collectible {
         this.radius = 20; 
         this.bobOffset = Math.random() * Math.PI * 2;
         this.pulseSize = 0;
+        this.timeRemaining = 10000; // 10 seconds lifetime
 
         // Slow arbitrary drift path
         const driftAngle = Math.random() * Math.PI * 2;
@@ -2674,6 +2675,7 @@ class Collectible {
     }
 
     update() {
+        this.timeRemaining -= 16.666;
         this.bobOffset += 0.04;
         this.pulseSize = Math.sin(this.bobOffset) * 2;
 
@@ -2699,6 +2701,14 @@ class Collectible {
     }
 
     draw() {
+        // Warning flash when close to expiration
+        if (this.timeRemaining < 3000) {
+            const blinkPeriod = this.timeRemaining < 1000 ? 80 : 160;
+            if (Math.floor(this.timeRemaining / blinkPeriod) % 2 === 0) {
+                return;
+            }
+        }
+
         ctx.save();
         ctx.translate(this.x, this.y + this.pulseSize);
 
@@ -3345,6 +3355,7 @@ function updateGame(deltaTime) {
     enemies.forEach(enemy => enemy.update(deltaTime));
 
     collectibles.forEach(col => col.update());
+    collectibles = collectibles.filter(col => col.timeRemaining > 0);
 
     particles.forEach(p => p.update());
     particles = particles.filter(p => p.life > 0);
@@ -3493,20 +3504,6 @@ function checkCollisions() {
         }
     }
 
-    // AA. Player Bullets vs Collectibles (Shooting bonus items)
-    for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
-        const bullet = bullets[bIndex];
-        for (let cIndex = collectibles.length - 1; cIndex >= 0; cIndex--) {
-            const col = collectibles[cIndex];
-            const dist = Math.hypot(bullet.x - col.x, bullet.y - col.y);
-            
-            if (dist < bullet.radius + col.radius) {
-                bullets.splice(bIndex, 1);
-                collectItem(cIndex);
-                break; // Bullet spent
-            }
-        }
-    }
 
     // B. Player vs Collectibles (Colliding with bonus items)
     for (let cIndex = collectibles.length - 1; cIndex >= 0; cIndex--) {
@@ -3642,7 +3639,7 @@ function drawCanvasHUD() {
     // Render version number in bottom-right corner
     ctx.save();
     ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = '#444444';
+    ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText('v1.3.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
@@ -3666,6 +3663,8 @@ function updateTouchControlsVisibility() {
         } else {
             touchControls.classList.add('hidden');
         }
+        // Force canvas layout recalculation to match the new size immediately
+        resizeCanvas();
     }
 }
 
