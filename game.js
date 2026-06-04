@@ -1,7 +1,7 @@
 // Game Configuration Constants
 let ARENA_WIDTH = 1024;
 let ARENA_HEIGHT = 768;
-let ARENA_CEILING = 55;
+let ARENA_CEILING = 2;
 
 // Game State Variables
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
@@ -133,7 +133,7 @@ function resizeCanvas() {
         ARENA_WIDTH = width / scale;
         ARENA_HEIGHT = height / scale;
     }
-    ARENA_CEILING = isTouchDevice ? 15 : 55;
+    ARENA_CEILING = 2;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // Trigger immediately to fit screen layout

@@ -691,6 +691,17 @@ body {
         height: auto;
     }
     
+    .screen-hud {
+        height: 180px !important;
+        min-height: 180px !important;
+        flex-direction: column !important;
+        flex-wrap: nowrap !important;
+        justify-content: center !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 15px 10px !important;
+    }
+
     .touch-controls-container {
         position: relative;
         bottom: 0;
@@ -701,8 +712,8 @@ body {
         border-top: 3px solid #1a1a26;
         display: flex !important;
         justify-content: space-between;
-        align-items: center;
-        padding: 0 20px;
+        align-items: flex-start;
+        padding: 20px 20px 0 20px;
         pointer-events: auto;
         flex-shrink: 0;
     }
@@ -722,7 +733,7 @@ body {
         height: 60px;
     }
     
-    #btn-touch-strafe {
-        margin-bottom: 12px;
+    #btn-touch-reverse {
+        margin-top: 12px;
     }
 }
