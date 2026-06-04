@@ -1,7 +1,7 @@
 // Game Configuration Constants
 let ARENA_WIDTH = 1024;
 let ARENA_HEIGHT = 768;
-let ARENA_CEILING = 2;
+let ARENA_CEILING = 0;
 
 // Game State Variables
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
@@ -133,7 +133,7 @@ function resizeCanvas() {
         ARENA_WIDTH = width / scale;
         ARENA_HEIGHT = height / scale;
     }
-    ARENA_CEILING = 2;
+    ARENA_CEILING = 0;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // Trigger immediately to fit screen layout
@@ -2891,7 +2891,7 @@ function startGame() {
 
     spawnWave();
     
-    showNotification("WAVE 2: TORY WAVE", 220);
+    showNotification("TORY WAVE", 220);
 }
 
 function spawnWave() {
@@ -3387,24 +3387,24 @@ function updateGame(deltaTime) {
             spawnWave();
             
             const layoutWave = 2 + ((currentWave - 2) % 17);
-            let waveMsg = "WAVE " + currentWave;
-            if (layoutWave === 2) waveMsg = "WAVE " + currentWave + ": TORY WAVE";
-            else if (layoutWave === 3) waveMsg = "WAVE " + currentWave + ": REFORM INVASION";
-            else if (layoutWave === 4) waveMsg = "WAVE " + currentWave + ": GREEN UNPLEASANT LAND";
-            else if (layoutWave === 5) waveMsg = "WAVE " + currentWave + ": LIBERAL DEMOCRAPS";
-            else if (layoutWave === 6) waveMsg = "WAVE " + currentWave + ": BOSS - THE MANDIPETER";
-            else if (layoutWave === 7) waveMsg = "WAVE " + currentWave + ": SEWAGE CRISIS";
-            else if (layoutWave === 8) waveMsg = "WAVE " + currentWave + ": THE LORDS ARE REVOLTING";
-            else if (layoutWave === 9) waveMsg = "WAVE " + currentWave + ": DAVEY BUNGEE";
-            else if (layoutWave === 10) waveMsg = "WAVE " + currentWave + ": COMMONS DEBATE";
-            else if (layoutWave === 11) waveMsg = "WAVE " + currentWave + ": TORY PSYCHODRAMA";
-            else if (layoutWave === 12) waveMsg = "WAVE " + currentWave + ": CLIMATE CATASTROPHE";
-            else if (layoutWave === 13) waveMsg = "WAVE " + currentWave + ": REFORM BOOZE-UP";
-            else if (layoutWave === 14) waveMsg = "WAVE " + currentWave + ": LIB DEM FUNLAND";
-            else if (layoutWave === 15) waveMsg = "WAVE " + currentWave + ": TORY SLEAZE";
-            else if (layoutWave === 16) waveMsg = "WAVE " + currentWave + ": REFORM BOSS";
-            else if (layoutWave === 17) waveMsg = "WAVE " + currentWave + ": GREEN BOSS";
-            else if (layoutWave === 18) waveMsg = "WAVE " + currentWave + ": EURO ZONE";
+            let waveMsg = "";
+            if (layoutWave === 2) waveMsg = "TORY WAVE";
+            else if (layoutWave === 3) waveMsg = "REFORM INVASION";
+            else if (layoutWave === 4) waveMsg = "GREEN UNPLEASANT LAND";
+            else if (layoutWave === 5) waveMsg = "LIBERAL DEMOCRAPS";
+            else if (layoutWave === 6) waveMsg = "BOSS - THE MANDIPETER";
+            else if (layoutWave === 7) waveMsg = "SEWAGE CRISIS";
+            else if (layoutWave === 8) waveMsg = "THE LORDS ARE REVOLTING";
+            else if (layoutWave === 9) waveMsg = "DAVEY BUNGEE";
+            else if (layoutWave === 10) waveMsg = "COMMONS DEBATE";
+            else if (layoutWave === 11) waveMsg = "TORY PSYCHODRAMA";
+            else if (layoutWave === 12) waveMsg = "CLIMATE CATASTROPHE";
+            else if (layoutWave === 13) waveMsg = "REFORM BOOZE-UP";
+            else if (layoutWave === 14) waveMsg = "LIB DEM FUNLAND";
+            else if (layoutWave === 15) waveMsg = "TORY SLEAZE";
+            else if (layoutWave === 16) waveMsg = "REFORM BOSS";
+            else if (layoutWave === 17) waveMsg = "GREEN BOSS";
+            else if (layoutWave === 18) waveMsg = "EURO ZONE";
             
             showNotification(waveMsg, 220);
         }
@@ -3649,7 +3649,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
