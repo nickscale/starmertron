@@ -43,6 +43,12 @@ const btnResume = document.getElementById('btn-resume');
 let touchMoveX = 0;
 let touchMoveY = 0;
 
+// Detect touch capability comprehensively
+const isTouchDevice = ('ontouchstart' in window) || 
+                      (navigator.maxTouchPoints > 0) || 
+                      (navigator.msMaxTouchPoints > 0) ||
+                      window.matchMedia("(pointer: coarse)").matches;
+
 // Game Entities Arrays
 let player = null;
 let bullets = [];
@@ -2821,6 +2827,7 @@ class Particle {
 
 function startGame() {
     gameState = 'PLAYING';
+    updateTouchControlsVisibility();
     
     uiOverlay.style.display = 'none';
     screenStart.classList.add('hidden');
@@ -3173,6 +3180,7 @@ function triggerScreenShake(intensity, durationMs) {
 
 function pauseGame() {
     gameState = 'PAUSED';
+    updateTouchControlsVisibility();
     uiOverlay.style.display = 'flex';
     screenPaused.classList.remove('hidden');
     screenPaused.classList.add('active');
@@ -3182,6 +3190,7 @@ function pauseGame() {
 
 function resumeGame() {
     gameState = 'PLAYING';
+    updateTouchControlsVisibility();
     uiOverlay.style.display = 'none';
     screenPaused.classList.add('hidden');
     screenPaused.classList.remove('active');
@@ -3225,6 +3234,7 @@ function playerDeath() {
 
 function gameOver() {
     gameState = 'GAMEOVER';
+    updateTouchControlsVisibility();
     uiOverlay.style.display = 'flex';
     screenGameOver.classList.remove('hidden');
     screenGameOver.classList.add('active');
@@ -3628,10 +3638,18 @@ const joystickKnob = document.getElementById('joystick-knob');
 const btnTouchReverse = document.getElementById('btn-touch-reverse');
 const btnTouchStrafe = document.getElementById('btn-touch-strafe');
 
-// Detect touch capability
-const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+function updateTouchControlsVisibility() {
+    if (isTouchDevice && touchControls) {
+        if (gameState === 'PLAYING') {
+            touchControls.classList.remove('hidden');
+        } else {
+            touchControls.classList.add('hidden');
+        }
+    }
+}
+
+// Perform initial dynamic text replacement for instructions on touch device
 if (isTouchDevice) {
-    if (touchControls) touchControls.classList.remove('hidden');
     const controlsGuide = document.getElementById('controls-guide');
     if (controlsGuide) {
         controlsGuide.innerHTML = `

@@ -45,26 +45,13 @@
             <!-- Game Canvas -->
             <canvas id="gameCanvas"></canvas>
 
-            <!-- Mobile Touch Controls -->
-            <div id="touch-controls" class="touch-controls-container hidden">
-                <!-- Joystick Zone -->
-                <div id="joystick-boundary" class="joystick-outer">
-                    <div id="joystick-knob" class="joystick-inner"></div>
-                </div>
-                <!-- Action Buttons Group (NES layout, unlabeled) -->
-                <div class="touch-buttons-group">
-                    <div id="btn-touch-reverse" class="touch-action-btn"></div>
-                    <div id="btn-touch-strafe" class="touch-action-btn"></div>
-                </div>
-            </div>
-
             <!-- Overlay UI Screens -->
             <div id="ui-overlay" class="overlay-container">
                 <!-- Start Screen -->
                 <div id="screen-start" class="screen-overlay active">
                     <h2 class="title-logo text-flash">STARMERTRON</h2>
                     <p class="description">NO DIRECTION. NO FUTURE. NO POLICIES.</p>
-                    <div class="controls-guide">
+                    <div id="controls-guide" class="controls-guide">
                         <div><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> or <span class="key">▲</span><span class="key">▼</span><span class="key">◄</span><span class="key">►</span> to MOVE (Shoots constantly in travel direction)</div>
                         <div>Hold <span class="key wide">SPACEBAR</span> to STRAFE (locks firing angle)</div>
                         <div>Collect ballot boxes <span class="text-gold">✉</span> (+500) and roses <span class="text-red">🌹</span> (+1000)</div>
@@ -89,10 +76,24 @@
                     <button id="btn-restart" class="arcade-btn">PLAY AGAIN</button>
                 </div>
 
+                <!-- Pause Screen -->
                 <div id="screen-paused" class="screen-overlay hidden">
                     <h2 class="title-paused text-cyan">PAUSED</h2>
                     <button id="btn-resume" class="arcade-btn">RESUME GAME</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- Mobile Touch Controls (Outside crt-screen for GameBoy/DS style layout in portrait) -->
+        <div id="touch-controls" class="touch-controls-container hidden">
+            <!-- Joystick Zone -->
+            <div id="joystick-boundary" class="joystick-outer">
+                <div id="joystick-knob" class="joystick-inner"></div>
+            </div>
+            <!-- Action Buttons Group (NES layout, unlabeled) -->
+            <div class="touch-buttons-group">
+                <div id="btn-touch-reverse" class="touch-action-btn"></div>
+                <div id="btn-touch-strafe" class="touch-action-btn"></div>
             </div>
         </div>
     </div>
