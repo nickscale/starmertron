@@ -22,6 +22,10 @@ const hudHiScore = document.getElementById('hud-hiscore');
 const hudLives = document.getElementById('hud-lives');
 const hudWave = document.getElementById('hud-wave');
 
+// HUD Top Action Buttons
+const hudMuteBtn = document.getElementById('hud-btn-mute');
+const hudPauseBtn = document.getElementById('hud-btn-pause');
+
 const uiOverlay = document.getElementById('ui-overlay');
 const screenStart = document.getElementById('screen-start');
 const screenGameOver = document.getElementById('screen-gameover');
@@ -33,6 +37,10 @@ const finalWave = document.getElementById('final-wave');
 // Buttons
 const btnStart = document.getElementById('btn-start');
 const btnRestart = document.getElementById('btn-restart');
+
+// Touch controls input state
+let touchMoveX = 0;
+let touchMoveY = 0;
 
 // Game Entities Arrays
 let player = null;
@@ -154,13 +162,48 @@ window.addEventListener('keyup', (e) => {
     }
 });
 
+hudMuteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const muted = window.audio.toggleMute();
+    hudMuteBtn.textContent = muted ? "UNMUTE" : "MUTE";
+    showNotification(muted ? "SOUND MUTED" : "SOUND ON");
+});
+
+hudPauseBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (gameState === 'PLAYING') {
+        pauseGame();
+    } else if (gameState === 'PAUSED') {
+        resumeGame();
+    }
+});
+
 btnStart.addEventListener('click', () => {
     window.audio.init();
+
+    // Fullscreen toggle request
+    const chkFullscreen = document.getElementById('chk-fullscreen');
+    if (chkFullscreen && chkFullscreen.checked) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+            docEl.requestFullscreen().catch(err => console.log(err));
+        } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+        }
+    }
+
+    // Reset HUD text indicators
+    hudPauseBtn.textContent = "PAUSE";
+
     startGame();
 });
 
 btnRestart.addEventListener('click', () => {
     window.audio.init();
+    
+    // Reset HUD text indicators
+    hudPauseBtn.textContent = "PAUSE";
+
     startGame();
 });
 
@@ -200,7 +243,10 @@ class Player {
         if (keys['a'] || keys['arrowleft']) dx -= 1;
         if (keys['d'] || keys['arrowright']) dx += 1;
 
-        if (dx !== 0 && dy !== 0) {
+        if (touchMoveX !== 0 || touchMoveY !== 0) {
+            dx = touchMoveX;
+            dy = touchMoveY;
+        } else if (dx !== 0 && dy !== 0) {
             dx *= 0.7071;
             dy *= 0.7071;
         }
@@ -3125,6 +3171,7 @@ function pauseGame() {
     screenPaused.classList.remove('hidden');
     screenPaused.classList.add('active');
     window.audio.stopMusic();
+    if (hudPauseBtn) hudPauseBtn.textContent = "RESUME";
 }
 
 function resumeGame() {
@@ -3133,6 +3180,7 @@ function resumeGame() {
     screenPaused.classList.add('hidden');
     screenPaused.classList.remove('active');
     window.audio.startMusic();
+    if (hudPauseBtn) hudPauseBtn.textContent = "PAUSE";
 }
 
 function playerDeath() {
@@ -3554,6 +3602,136 @@ function drawCanvasHUD() {
     ctx.fillText('v1.3.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
+
+// ----------------------------------------------------
+// Touch Controls setup
+// ----------------------------------------------------
+
+const touchControls = document.getElementById('touch-controls');
+const joystickBoundary = document.getElementById('joystick-boundary');
+const joystickKnob = document.getElementById('joystick-knob');
+const btnTouchReverse = document.getElementById('btn-touch-reverse');
+const btnTouchStrafe = document.getElementById('btn-touch-strafe');
+
+// Detect touch capability
+const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (isTouchDevice) {
+    touchControls.classList.remove('hidden');
+}
+
+// Joystick active state tracking
+let joystickTouchId = null;
+let joystickCenter = { x: 0, y: 0 };
+const maxDragRadius = 40; // max distance joystick handle can drag
+
+function getTouchById(touches, id) {
+    for (let i = 0; i < touches.length; i++) {
+        if (touches[i].identifier === id) return touches[i];
+    }
+    return null;
+}
+
+joystickBoundary.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (joystickTouchId !== null) return; // already active
+
+    const rect = joystickBoundary.getBoundingClientRect();
+    joystickCenter.x = rect.left + rect.width / 2;
+    joystickCenter.y = rect.top + rect.height / 2;
+
+    const touch = e.changedTouches[0];
+    joystickTouchId = touch.identifier;
+
+    handleJoystickMove(touch.clientX, touch.clientY);
+}, { passive: false });
+
+window.addEventListener('touchmove', (e) => {
+    if (joystickTouchId === null) return;
+    const touch = getTouchById(e.touches, joystickTouchId);
+    if (!touch) return;
+
+    handleJoystickMove(touch.clientX, touch.clientY);
+}, { passive: false });
+
+window.addEventListener('touchend', (e) => {
+    if (joystickTouchId === null) return;
+    const touch = getTouchById(e.changedTouches, joystickTouchId);
+    if (touch) {
+        resetJoystick();
+    }
+}, { passive: false });
+
+window.addEventListener('touchcancel', (e) => {
+    if (joystickTouchId === null) return;
+    const touch = getTouchById(e.changedTouches, joystickTouchId);
+    if (touch) {
+        resetJoystick();
+    }
+}, { passive: false });
+
+function handleJoystickMove(clientX, clientY) {
+    const dx = clientX - joystickCenter.x;
+    const dy = clientY - joystickCenter.y;
+    const dist = Math.hypot(dx, dy);
+
+    let dragX = dx;
+    let dragY = dy;
+
+    if (dist > maxDragRadius) {
+        dragX = (dx / dist) * maxDragRadius;
+        dragY = (dy / dist) * maxDragRadius;
+    }
+
+    joystickKnob.style.transform = `translate(${dragX}px, ${dragY}px)`;
+
+    // Convert to normalized speed components (-1 to 1)
+    touchMoveX = dragX / maxDragRadius;
+    touchMoveY = dragY / maxDragRadius;
+}
+
+function resetJoystick() {
+    joystickTouchId = null;
+    joystickKnob.style.transform = 'translate(0px, 0px)';
+    touchMoveX = 0;
+    touchMoveY = 0;
+}
+
+// Action buttons touches
+btnTouchReverse.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    keys['r'] = true;
+    btnTouchReverse.classList.add('active');
+}, { passive: false });
+
+btnTouchReverse.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    keys['r'] = false;
+    btnTouchReverse.classList.remove('active');
+}, { passive: false });
+
+btnTouchReverse.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    keys['r'] = false;
+    btnTouchReverse.classList.remove('active');
+}, { passive: false });
+
+btnTouchStrafe.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    isStrafing = true;
+    btnTouchStrafe.classList.add('active');
+}, { passive: false });
+
+btnTouchStrafe.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    isStrafing = false;
+    btnTouchStrafe.classList.remove('active');
+}, { passive: false });
+
+btnTouchStrafe.addEventListener('touchcancel', (e) => {
+    e.preventDefault();
+    isStrafing = false;
+    btnTouchStrafe.classList.remove('active');
+}, { passive: false });
 
 // ----------------------------------------------------
 // Init Loop Execution
