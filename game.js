@@ -124,7 +124,10 @@ function resizeCanvas() {
     canvas.width = width;
     canvas.height = height;
 
-    const scale = Math.min(width / 1024, height / 768);
+    const baseWidth = isTouchDevice ? 700 : 1024;
+    const baseHeight = isTouchDevice ? 525 : 768;
+
+    const scale = Math.min(width / baseWidth, height / baseHeight);
     if (scale > 0) {
         ARENA_WIDTH = width / scale;
         ARENA_HEIGHT = height / scale;
@@ -3590,11 +3593,13 @@ function drawArenaBoundary() {
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
     const spacing = 40;
+    ctx.beginPath();
     for (let x = 40; x < ARENA_WIDTH - 20; x += spacing) {
         for (let y = 80; y < ARENA_HEIGHT - 20; y += spacing) {
-            ctx.fillRect(x - 1, y - 1, 2, 2);
+            ctx.rect(x - 1, y - 1, 2, 2);
         }
     }
+    ctx.fill();
 }
 
 function drawGame() {

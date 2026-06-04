@@ -586,6 +586,10 @@ body {
 
 /* Media Queries for Mobile Responsive Fitting */
 @media (max-width: 768px) {
+    .scanlines, .crt-vignette {
+        display: none !important;
+    }
+
     .screen-hud {
         height: auto;
         min-height: 48px;
