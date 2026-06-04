@@ -125,9 +125,12 @@ body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 40px;
+    padding: 20px;
     text-align: center;
     transition: opacity 0.3s ease;
+    overflow-y: auto;
+    max-height: 100%;
+    -webkit-overflow-scrolling: touch;
 }
 
 .screen-overlay.hidden {
@@ -563,4 +566,94 @@ body {
 @keyframes shiftGlow {
     0% { background-position: 0% 50%; }
     100% { background-position: 100% 50%; }
+}
+
+/* Media Queries for Mobile Responsive Fitting */
+@media (max-width: 768px) {
+    .screen-hud {
+        height: auto;
+        min-height: 48px;
+        padding: 5px 10px;
+        flex-wrap: wrap; /* Wrap elements to multiple lines if needed */
+        justify-content: center;
+        gap: 6px;
+    }
+    
+    .hud-item {
+        font-size: 0.55rem; /* Make text smaller on mobile */
+        gap: 4px;
+    }
+    
+    .hud-btn {
+        font-size: 0.45rem;
+        padding: 4px 6px;
+        margin-left: 3px;
+    }
+
+    .title-logo {
+        font-size: 1.8rem;
+        margin-bottom: 5px;
+    }
+    
+    .description {
+        font-size: 0.85rem;
+        margin-bottom: 15px;
+    }
+
+    .controls-guide {
+        font-size: 0.75rem;
+        padding: 10px;
+        margin-bottom: 15px;
+        max-height: 180px;
+        overflow-y: auto;
+    }
+
+    .arcade-btn {
+        font-size: 0.85rem;
+        padding: 10px 20px;
+    }
+
+    .fullscreen-option {
+        margin-top: 10px;
+        margin-bottom: 15px;
+    }
+
+    .fullscreen-label {
+        font-size: 0.85rem;
+    }
+}
+
+@media (max-height: 580px) {
+    .screen-overlay {
+        justify-content: flex-start; /* scroll from top when space is tight */
+        padding-top: 55px; /* clear the top HUD bar space */
+    }
+    
+    .title-logo {
+        font-size: 1.5rem;
+        margin-bottom: 5px;
+    }
+    
+    .description {
+        font-size: 0.8rem;
+        margin-bottom: 10px;
+    }
+
+    .controls-guide {
+        font-size: 0.7rem;
+        padding: 8px;
+        margin-bottom: 10px;
+        max-height: 100px;
+        overflow-y: auto;
+    }
+
+    .arcade-btn {
+        font-size: 0.75rem;
+        padding: 8px 16px;
+    }
+
+    .fullscreen-option {
+        margin-top: 5px;
+        margin-bottom: 10px;
+    }
 }

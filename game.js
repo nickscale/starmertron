@@ -37,6 +37,7 @@ const finalWave = document.getElementById('final-wave');
 // Buttons
 const btnStart = document.getElementById('btn-start');
 const btnRestart = document.getElementById('btn-restart');
+const btnResume = document.getElementById('btn-resume');
 
 // Touch controls input state
 let touchMoveX = 0;
@@ -176,6 +177,11 @@ hudPauseBtn.addEventListener('click', (e) => {
     } else if (gameState === 'PAUSED') {
         resumeGame();
     }
+});
+
+btnResume.addEventListener('click', (e) => {
+    e.stopPropagation();
+    resumeGame();
 });
 
 btnStart.addEventListener('click', () => {
@@ -3226,6 +3232,15 @@ function gameOver() {
     finalWave.textContent = currentWave;
     window.audio.stopMusic();
 
+    // Exit fullscreen if active on game over
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().catch(err => console.log(err));
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+
     if (score > hiScore) {
         hiScore = score;
         localStorage.setItem('starmertron_hiscore', hiScore);
@@ -3616,7 +3631,15 @@ const btnTouchStrafe = document.getElementById('btn-touch-strafe');
 // Detect touch capability
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 if (isTouchDevice) {
-    touchControls.classList.remove('hidden');
+    if (touchControls) touchControls.classList.remove('hidden');
+    const controlsGuide = document.getElementById('controls-guide');
+    if (controlsGuide) {
+        controlsGuide.innerHTML = `
+            <div style="font-size: 0.85rem; line-height: 1.5; text-align: center; color: #b5b5c9;">
+                Use the joystick to <span class="text-cyan">MOVE</span> and the buttons to <span class="text-cyan">STRAFE</span> (locks firing angle) and <span class="text-pink">REVERSE</span> (fire backwards).
+            </div>
+        `;
+    }
 }
 
 // Joystick active state tracking
