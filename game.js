@@ -1,13 +1,13 @@
 // Game Configuration Constants
-const ARENA_WIDTH = 1024;
-const ARENA_HEIGHT = 768;
+let ARENA_WIDTH = 1024;
+let ARENA_HEIGHT = 768;
 
 // Game State Variables
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
 let score = 0;
 let hiScore = localStorage.getItem('starmertron_hiscore') || 50000;
 let lives = 10; // Start with 10 lives
-let currentWave = 1;
+let currentWave = 2;
 let waveTransitionTimer = 0;
 let shakeTime = 0;
 let shakeIntensity = 0;
@@ -117,9 +117,18 @@ hudHiScore.textContent = String(hiScore).padStart(6, '0');
 
 // Responsive Canvas Auto-Resize Logic (Responsive Bezel Fitting)
 function resizeCanvas() {
-    const rect = canvas.parentNode.getBoundingClientRect();
-    canvas.width = rect.width;
-    canvas.height = rect.height;
+    const width = canvas.clientWidth || window.innerWidth;
+    const height = canvas.clientHeight || window.innerHeight;
+    if (width <= 0 || height <= 0) return;
+    
+    canvas.width = width;
+    canvas.height = height;
+
+    const scale = Math.min(width / 1024, height / 768);
+    if (scale > 0) {
+        ARENA_WIDTH = width / scale;
+        ARENA_HEIGHT = height / scale;
+    }
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // Trigger immediately to fit screen layout
@@ -213,6 +222,17 @@ btnStart.addEventListener('click', () => {
 btnRestart.addEventListener('click', () => {
     window.audio.init();
     
+    // Fullscreen toggle request
+    const chkFullscreen = document.getElementById('chk-fullscreen');
+    if (chkFullscreen && chkFullscreen.checked && !document.fullscreenElement) {
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) {
+            docEl.requestFullscreen().catch(err => console.log(err));
+        } else if (docEl.webkitRequestFullscreen) {
+            docEl.webkitRequestFullscreen();
+        }
+    }
+
     // Reset HUD text indicators
     hudPauseBtn.textContent = "PAUSE";
 
@@ -267,8 +287,7 @@ class Player {
         this.y += dy * this.speed;
 
         this.x = Math.max(this.radius + 15, Math.min(ARENA_WIDTH - this.radius - 15, this.x));
-        // Boundary y starts at 55 to clear the integrated HUD overlay
-        this.y = Math.max(this.radius + 60, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
+        this.y = Math.max(this.radius + 55, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
 
         if (!isStrafing) {
             if (dx !== 0 || dy !== 0) {
@@ -917,7 +936,7 @@ class Enemy {
     update(deltaTime) {
         this.angle += 0.03;
 
-        const layoutWave = ((currentWave - 1) % 18) + 1;
+        const layoutWave = 2 + ((currentWave - 2) % 17);
 
         // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
         if (layoutWave === 10) {
@@ -2839,9 +2858,9 @@ function startGame() {
 
     score = 0;
     lives = 10; // Start with 10 lives
-    currentWave = 1;
+    currentWave = 2;
     hudScore.textContent = '000000';
-    hudWave.textContent = '1';
+    hudWave.textContent = '2';
     updateLivesUI();
 
     bullets = [];
@@ -2857,7 +2876,7 @@ function startGame() {
 
     spawnWave();
     
-    showNotification("WAVE 1: THE BASICS", 220);
+    showNotification("WAVE 2: TORY WAVE", 220);
 }
 
 function spawnWave() {
@@ -2880,20 +2899,17 @@ function spawnWave() {
         enemies.push(new Enemy(ex, ey, type));
     };
 
-    const layoutWave = ((currentWave - 1) % 18) + 1;
+    const layoutWave = 2 + ((currentWave - 2) % 17);
 
     // Design waves according to user requirements
-    if (layoutWave === 1) {
-        // Wave 1 - Basic enemies: Newspapers, Chancellor briefcases
-        for (let i = 0; i < 12; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 12; i++) spawnEnemy('ballot_enemy');
-    }
-    else if (layoutWave === 2) {
+    if (layoutWave === 2) {
         // Wave 2 - "Tory Wave" - Tory trees + banknotes, sleaze buckets, bikinis + Kemi Badenoch mini boss
         for (let i = 0; i < 8; i++) spawnEnemy('tory');
         for (let i = 0; i < 4; i++) spawnEnemy('banknote');
         for (let i = 0; i < 3; i++) spawnEnemy('ooze_bucket');
         for (let i = 0; i < 3; i++) spawnEnemy('bikini');
+        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
         spawnEnemy('kemi_miniboss');
     }
     else if (layoutWave === 3) {
@@ -2903,6 +2919,8 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('booze_enemy');
         for (let i = 0; i < 2; i++) spawnEnemy('vape');
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
+        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
         spawnEnemy('farage_miniboss');
     }
     else if (layoutWave === 4) {
@@ -2911,6 +2929,8 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('tree_trunk');
         for (let i = 0; i < 3; i++) spawnEnemy('tshirt');
         for (let i = 0; i < 3; i++) spawnEnemy('cat_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 5) {
@@ -2925,6 +2945,8 @@ function spawnWave() {
         for (let i = 0; i < 6; i++) spawnEnemy('candy_floss');
         for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
         for (let i = 0; i < 5; i++) spawnEnemy('brighton_rock');
+        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
         spawnEnemy('ed_miniboss');
     }
     else if (layoutWave === 6) {
@@ -3348,10 +3370,9 @@ function updateGame(deltaTime) {
             hudWave.textContent = currentWave;
             spawnWave();
             
-            const layoutWave = ((currentWave - 1) % 18) + 1;
+            const layoutWave = 2 + ((currentWave - 2) % 17);
             let waveMsg = "WAVE " + currentWave;
-            if (layoutWave === 1) waveMsg = "WAVE " + currentWave + ": THE BASICS";
-            else if (layoutWave === 2) waveMsg = "WAVE " + currentWave + ": TORY WAVE";
+            if (layoutWave === 2) waveMsg = "WAVE " + currentWave + ": TORY WAVE";
             else if (layoutWave === 3) waveMsg = "WAVE " + currentWave + ": REFORM INVASION";
             else if (layoutWave === 4) waveMsg = "WAVE " + currentWave + ": GREEN UNPLEASANT LAND";
             else if (layoutWave === 5) waveMsg = "WAVE " + currentWave + ": LIBERAL DEMOCRAPS";
@@ -3621,7 +3642,7 @@ function drawCanvasHUD() {
     // Render version number in bottom-right corner
     ctx.save();
     ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillStyle = '#444444';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
     ctx.fillText('v1.3.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);

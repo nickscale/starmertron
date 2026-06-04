@@ -18,7 +18,7 @@
             <div class="crt-flicker"></div>
             <div class="crt-vignette"></div>
 
-            <!-- Integrated Screen Top HUD -->
+            <!-- Integrated Screen Top HUD (Placed outside canvas container) -->
             <div class="screen-hud">
                 <div class="hud-item">
                     <span class="hud-label">SCORE:</span>
@@ -42,44 +42,46 @@
                 </div>
             </div>
             
-            <!-- Game Canvas -->
-            <canvas id="gameCanvas"></canvas>
+            <!-- Canvas Container to prevent HUD overlap -->
+            <div id="canvas-container">
+                <canvas id="gameCanvas"></canvas>
 
-            <!-- Overlay UI Screens -->
-            <div id="ui-overlay" class="overlay-container">
-                <!-- Start Screen -->
-                <div id="screen-start" class="screen-overlay active">
-                    <h2 class="title-logo text-flash">STARMERTRON</h2>
-                    <p class="description">NO DIRECTION. NO FUTURE. NO POLICIES.</p>
-                    <div id="controls-guide" class="controls-guide">
-                        <div><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> or <span class="key">▲</span><span class="key">▼</span><span class="key">◄</span><span class="key">►</span> to MOVE (Shoots constantly in travel direction)</div>
-                        <div>Hold <span class="key wide">SPACEBAR</span> to STRAFE (locks firing angle)</div>
-                        <div>Collect ballot boxes <span class="text-gold">✉</span> (+500) and roses <span class="text-red">🌹</span> (+1000)</div>
-                        <div>Avoid wigs, voter crosses, newspapers, and Reform arrows!</div>
-                        <div>Press <span class="key">ESC</span> to PAUSE | <span class="key">M</span> to MUTE</div>
+                <!-- Overlay UI Screens -->
+                <div id="ui-overlay" class="overlay-container">
+                    <!-- Start Screen -->
+                    <div id="screen-start" class="screen-overlay active">
+                        <h2 class="title-logo text-flash">STARMERTRON</h2>
+                        <p class="description">NO DIRECTION. NO FUTURE. NO POLICIES.</p>
+                        <div id="controls-guide" class="controls-guide">
+                            <div><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> or <span class="key">▲</span><span class="key">▼</span><span class="key">◄</span><span class="key">►</span> to MOVE (Shoots constantly in travel direction)</div>
+                            <div>Hold <span class="key wide">SPACEBAR</span> to STRAFE (locks firing angle)</div>
+                            <div>Collect ballot boxes <span class="text-gold">✉</span> (+500) and roses <span class="text-red">🌹</span> (+1000)</div>
+                            <div>Avoid wigs, voter crosses, newspapers, and Reform arrows!</div>
+                            <div>Press <span class="key">ESC</span> to PAUSE | <span class="key">M</span> to MUTE</div>
+                        </div>
+                        <div class="fullscreen-option">
+                            <label class="fullscreen-label">
+                                <input type="checkbox" id="chk-fullscreen" checked>
+                                <span>PLAY IN FULLSCREEN (RECOMMENDED)</span>
+                            </label>
+                        </div>
+                        <button id="btn-start" class="arcade-btn">INSERT COIN & START</button>
+                        <div class="audio-note">Warning: Contains retro synthesiser sound effects</div>
                     </div>
-                    <div class="fullscreen-option">
-                        <label class="fullscreen-label">
-                            <input type="checkbox" id="chk-fullscreen" checked>
-                            <span>PLAY IN FULLSCREEN (RECOMMENDED)</span>
-                        </label>
+
+                    <!-- Game Over Screen -->
+                    <div id="screen-gameover" class="screen-overlay hidden">
+                        <h2 class="title-gameover text-red text-flash">GAME OVER</h2>
+                        <p class="summary-score">FINAL SCORE: <span id="final-score" class="text-gold">0</span></p>
+                        <p class="summary-wave">WAVES SURVIVED: <span id="final-wave" class="text-cyan">0</span></p>
+                        <button id="btn-restart" class="arcade-btn">PLAY AGAIN</button>
                     </div>
-                    <button id="btn-start" class="arcade-btn">INSERT COIN & START</button>
-                    <div class="audio-note">Warning: Contains retro synthesiser sound effects</div>
-                </div>
 
-                <!-- Game Over Screen -->
-                <div id="screen-gameover" class="screen-overlay hidden">
-                    <h2 class="title-gameover text-red text-flash">GAME OVER</h2>
-                    <p class="summary-score">FINAL SCORE: <span id="final-score" class="text-gold">0</span></p>
-                    <p class="summary-wave">WAVES SURVIVED: <span id="final-wave" class="text-cyan">0</span></p>
-                    <button id="btn-restart" class="arcade-btn">PLAY AGAIN</button>
-                </div>
-
-                <!-- Pause Screen -->
-                <div id="screen-paused" class="screen-overlay hidden">
-                    <h2 class="title-paused text-cyan">PAUSED</h2>
-                    <button id="btn-resume" class="arcade-btn">RESUME GAME</button>
+                    <!-- Pause Screen -->
+                    <div id="screen-paused" class="screen-overlay hidden">
+                        <h2 class="title-paused text-cyan">PAUSED</h2>
+                        <button id="btn-resume" class="arcade-btn">RESUME GAME</button>
+                    </div>
                 </div>
             </div>
         </div>
