@@ -1,6 +1,7 @@
 // Game Configuration Constants
 let ARENA_WIDTH = 1024;
 let ARENA_HEIGHT = 768;
+let ARENA_CEILING = 55;
 
 // Game State Variables
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
@@ -132,6 +133,7 @@ function resizeCanvas() {
         ARENA_WIDTH = width / scale;
         ARENA_HEIGHT = height / scale;
     }
+    ARENA_CEILING = isTouchDevice ? 15 : 55;
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // Trigger immediately to fit screen layout
@@ -290,7 +292,7 @@ class Player {
         this.y += dy * this.speed;
 
         this.x = Math.max(this.radius + 15, Math.min(ARENA_WIDTH - this.radius - 15, this.x));
-        this.y = Math.max(this.radius + 55, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
+        this.y = Math.max(this.radius + ARENA_CEILING, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
 
         if (!isStrafing) {
             if (dx !== 0 || dy !== 0) {
@@ -992,8 +994,8 @@ class Enemy {
                 this.vx *= -1;
             }
 
-            if (this.y - this.radius <= 55) {
-                this.y = this.radius + 56;
+            if (this.y - this.radius <= ARENA_CEILING) {
+                this.y = this.radius + ARENA_CEILING + 1;
                 this.vy *= -1;
             } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
                 this.y = ARENA_HEIGHT - this.radius - 11;
@@ -1018,8 +1020,8 @@ class Enemy {
                 this.vx *= -1;
             }
             
-            if (this.y - this.radius <= 55) {
-                this.y = this.radius + 56;
+            if (this.y - this.radius <= ARENA_CEILING) {
+                this.y = this.radius + ARENA_CEILING + 1;
                 this.vy *= -1;
             } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
                 this.y = ARENA_HEIGHT - this.radius - 11;
@@ -1034,7 +1036,7 @@ class Enemy {
             // Bounce off boundaries
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             if (layoutWave === 10) {
@@ -1059,8 +1061,8 @@ class Enemy {
                 this.vx = -Math.abs(this.vx);
             }
             
-            if (this.y - this.radius <= 55) {
-                this.y = this.radius + 56;
+            if (this.y - this.radius <= ARENA_CEILING) {
+                this.y = this.radius + ARENA_CEILING + 1;
                 this.vy = Math.abs(this.vy);
             } else if (this.y + this.radius >= ARENA_HEIGHT - 10) {
                 this.y = ARENA_HEIGHT - this.radius - 11;
@@ -1134,7 +1136,7 @@ class Enemy {
             // Bounce off boundaries
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             this.fireTimer += deltaTime;
@@ -1156,7 +1158,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
             this.chompCycle += 0.15;
 
@@ -1169,7 +1171,7 @@ class Enemy {
         }
         else if (this.type === 'ed_davey') {
             this.angle += 0.064;
-            this.y = 115 + (Math.sin(this.angle) * 0.5 + 0.5) * 350;
+            this.y = (ARENA_CEILING + 60) + (Math.sin(this.angle) * 0.5 + 0.5) * 350;
             
             // Bounce side to side horizontally
             if (!this.vx) this.vx = 3.2;
@@ -1198,7 +1200,7 @@ class Enemy {
             // Bounce off boundaries
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             this.fireTimer += deltaTime;
@@ -1226,7 +1228,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             // Spew cosmetic diesel smoke particles
@@ -1259,7 +1261,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             // Destruct gums if all teeth are destroyed
@@ -1280,7 +1282,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             this.fireTimer += deltaTime;
@@ -1313,7 +1315,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             // Spawn colored particle trails trailing them
@@ -1343,7 +1345,7 @@ class Enemy {
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= 55) { this.y = this.radius + 56; this.vy = Math.abs(this.vy); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
         }
     }
@@ -1642,7 +1644,7 @@ class Enemy {
             ctx.restore();
         }
         else if (this.type === 'ed_davey') {
-            // Elastic wavy yellow bungee cord (from start ceiling coordinate (startX, 55) to translated position (0, 0))
+            // Elastic wavy yellow bungee cord (from start ceiling coordinate (startX, ARENA_CEILING) to translated position (0, 0))
             ctx.restore(); // Exit local translation temporarily to draw rope relative to screen
             ctx.save();
             ctx.strokeStyle = '#ffd700'; // Lib Dem yellow
@@ -1650,7 +1652,7 @@ class Enemy {
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
-            const startY = 55;
+            const startY = ARENA_CEILING;
             const endY = this.y;
             const segments = 24;
             const stepY = (endY - startY) / segments;
@@ -2694,8 +2696,8 @@ class Collectible {
             this.vx = -Math.abs(this.vx);
         }
 
-        if (this.y - this.radius <= 60) {
-            this.y = this.radius + 61;
+        if (this.y - this.radius <= ARENA_CEILING + 5) {
+            this.y = this.radius + ARENA_CEILING + 6;
             this.vy = Math.abs(this.vy);
         } else if (this.y + this.radius >= ARENA_HEIGHT - 15) {
             this.y = ARENA_HEIGHT - this.radius - 16;
@@ -2905,7 +2907,7 @@ function spawnWave() {
         let ex, ey, dist;
         do {
             ex = Math.random() * (ARENA_WIDTH - 80) + 40;
-            ey = Math.random() * (ARENA_HEIGHT - 125) + 75;
+            ey = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
             dist = Math.hypot(ex - px, ey - py);
         } while (dist < safeRadius);
 
@@ -3191,7 +3193,7 @@ function spawnWave() {
 
 function spawnCollectible() {
     const cx = Math.random() * (ARENA_WIDTH - 80) + 40;
-    const cy = Math.random() * (ARENA_HEIGHT - 125) + 75;
+    const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
     const type = Math.random() > 0.4 ? 'xvote' : 'rose';
     collectibles.push(new Collectible(cx, cy, type));
 }
@@ -3585,17 +3587,17 @@ function checkCollisions() {
 function drawArenaBoundary() {
     ctx.strokeStyle = 'rgba(255, 0, 127, 0.18)';
     ctx.lineWidth = 10;
-    ctx.strokeRect(10, 55, ARENA_WIDTH - 20, ARENA_HEIGHT - 65);
+    ctx.strokeRect(10, ARENA_CEILING, ARENA_WIDTH - 20, ARENA_HEIGHT - ARENA_CEILING - 10);
 
     ctx.strokeStyle = '#ff007f';
     ctx.lineWidth = 4;
-    ctx.strokeRect(10, 55, ARENA_WIDTH - 20, ARENA_HEIGHT - 65);
+    ctx.strokeRect(10, ARENA_CEILING, ARENA_WIDTH - 20, ARENA_HEIGHT - ARENA_CEILING - 10);
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.03)';
     const spacing = 40;
     ctx.beginPath();
     for (let x = 40; x < ARENA_WIDTH - 20; x += spacing) {
-        for (let y = 80; y < ARENA_HEIGHT - 20; y += spacing) {
+        for (let y = ARENA_CEILING + 25; y < ARENA_HEIGHT - 20; y += spacing) {
             ctx.rect(x - 1, y - 1, 2, 2);
         }
     }

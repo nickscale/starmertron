@@ -592,11 +592,11 @@ body {
 
     .screen-hud {
         height: auto;
-        min-height: 48px;
-        padding: 5px 10px;
+        min-height: 64px;
+        padding: 10px 10px 14px 10px;
         flex-wrap: wrap; /* Wrap elements to multiple lines if needed */
         justify-content: center;
-        gap: 6px;
+        gap: 8px;
     }
     
     .hud-item {
