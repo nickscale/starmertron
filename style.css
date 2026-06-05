@@ -640,8 +640,7 @@ body {
     }
 
     .fullscreen-option {
-        margin-top: 10px;
-        margin-bottom: 15px;
+        display: none !important;
     }
 
     .fullscreen-label {

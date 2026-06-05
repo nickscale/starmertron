@@ -227,7 +227,8 @@ btnStart.addEventListener('click', () => {
 
     // Fullscreen toggle request
     const chkFullscreen = document.getElementById('chk-fullscreen');
-    if (chkFullscreen && chkFullscreen.checked) {
+    const wantFullscreen = isTouchDevice || (chkFullscreen && chkFullscreen.checked);
+    if (wantFullscreen) {
         const docEl = document.documentElement;
         if (docEl.requestFullscreen) {
             docEl.requestFullscreen().catch(err => console.log(err));
@@ -247,7 +248,8 @@ btnRestart.addEventListener('click', () => {
     
     // Fullscreen toggle request
     const chkFullscreen = document.getElementById('chk-fullscreen');
-    if (chkFullscreen && chkFullscreen.checked && !document.fullscreenElement) {
+    const wantFullscreen = isTouchDevice || (chkFullscreen && chkFullscreen.checked && !document.fullscreenElement);
+    if (wantFullscreen) {
         const docEl = document.documentElement;
         if (docEl.requestFullscreen) {
             docEl.requestFullscreen().catch(err => console.log(err));
@@ -3667,7 +3669,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.6', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
@@ -3818,6 +3820,30 @@ btnTouchStrafe.addEventListener('touchcancel', (e) => {
     isStrafing = false;
     btnTouchStrafe.classList.remove('active');
 }, { passive: false });
+
+// Automatically lock orientation to landscape on mobile when fullscreen is entered
+document.addEventListener('fullscreenchange', () => {
+    if (document.fullscreenElement) {
+        if (isTouchDevice && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(err => console.log(err));
+        }
+    } else {
+        if (isTouchDevice && screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+    }
+});
+document.addEventListener('webkitfullscreenchange', () => {
+    if (document.webkitFullscreenElement) {
+        if (isTouchDevice && screen.orientation && screen.orientation.lock) {
+            screen.orientation.lock('landscape').catch(err => console.log(err));
+        }
+    } else {
+        if (isTouchDevice && screen.orientation && screen.orientation.unlock) {
+            screen.orientation.unlock();
+        }
+    }
+});
 
 // ----------------------------------------------------
 // Init Loop Execution
