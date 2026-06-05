@@ -3435,12 +3435,17 @@ function updateGame(deltaTime) {
 
     checkCollisions();
 
-    if (enemies.length === 0 && waveTransitionTimer === 0 && (!player || !player.isInvincibleCheat)) {
+    if (enemies.length === 0 && waveTransitionTimer === 0) {
         waveTransitionTimer = 150;
-        showNotification("WAVE COMPLETE! EXTRA LIFE!");
+        const isInvincible = player && player.isInvincibleCheat;
+        if (!isInvincible) {
+            showNotification("WAVE COMPLETE! EXTRA LIFE!");
+            lives++;
+            updateLivesUI();
+        } else {
+            showNotification("WAVE COMPLETE!");
+        }
         triggerScreenShake(5, 400);
-        lives++;
-        updateLivesUI();
     }
 
     if (waveTransitionTimer > 0) {
@@ -3713,7 +3718,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.9', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
