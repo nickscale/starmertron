@@ -168,12 +168,20 @@ window.addEventListener('keydown', (e) => {
         isStrafing = true;
     }
 
-    // Secret Invincibility Cheat Mode (I key)
-    if (e.key.toLowerCase() === 'i') {
+    // Secret Invincibility Cheat Mode (Shift+I key)
+    if (e.key.toLowerCase() === 'i' && e.shiftKey) {
         if (player) {
             player.isInvincibleCheat = !player.isInvincibleCheat;
             showNotification(player.isInvincibleCheat ? "INVINCIBILITY CHEAT: ON" : "INVINCIBILITY CHEAT: OFF");
             updateLivesUI();
+        }
+    }
+
+    // Secret Kill All Enemies Cheat Mode (Shift+K key)
+    if (e.key.toLowerCase() === 'k' && e.shiftKey) {
+        if (gameState === 'PLAYING') {
+            enemies = [];
+            showNotification("CHEAT: WAVE PURGED!");
         }
     }
 
@@ -225,9 +233,8 @@ btnResume.addEventListener('click', (e) => {
 btnStart.addEventListener('click', () => {
     window.audio.init();
 
-    // Fullscreen toggle request
-    const chkFullscreen = document.getElementById('chk-fullscreen');
-    const wantFullscreen = isTouchDevice || (chkFullscreen && chkFullscreen.checked);
+    // Fullscreen toggle request (mobile only)
+    const wantFullscreen = isTouchDevice;
     if (wantFullscreen) {
         const docEl = document.documentElement;
         if (docEl.requestFullscreen) {
@@ -246,9 +253,8 @@ btnStart.addEventListener('click', () => {
 btnRestart.addEventListener('click', () => {
     window.audio.init();
     
-    // Fullscreen toggle request
-    const chkFullscreen = document.getElementById('chk-fullscreen');
-    const wantFullscreen = isTouchDevice || (chkFullscreen && chkFullscreen.checked && !document.fullscreenElement);
+    // Fullscreen toggle request (mobile only)
+    const wantFullscreen = isTouchDevice && !document.fullscreenElement;
     if (wantFullscreen) {
         const docEl = document.documentElement;
         if (docEl.requestFullscreen) {
@@ -557,7 +563,7 @@ class Enemy {
                 this.bobOffset = Math.random() * Math.PI * 2;
                 break;
             case 'newspaper': 
-                this.radius = 20;
+                this.radius = 22;
                 this.speed = 0.7 + currentWave * 0.06;
                 this.hp = 1;
                 this.color = '#ffffff';
@@ -587,7 +593,7 @@ class Enemy {
                 this.vy = Math.sin(toryAngle) * this.speed;
                 break;
             case 'reform': // Reform UK arrow circle
-                this.radius = 22;
+                this.radius = 24.2;
                 this.hp = 1;
                 this.color = '#00d2c4';
                 this.scoreValue = 350;
@@ -597,7 +603,7 @@ class Enemy {
                 this.vy = 0;
                 break;
             case 'green': // Green party sunflower globe
-                this.radius = 22;
+                this.radius = 24.2;
                 this.speed = 0.35; // Very slowly traverse
                 this.hp = 1;
                 this.color = '#6ab023';
@@ -607,7 +613,7 @@ class Enemy {
                 this.vy = Math.sin(greenAngle) * this.speed;
                 break;
             case 'libdem': // Yellow Lib Dem bird
-                this.radius = 22;
+                this.radius = 24.2;
                 this.hp = 1;
                 this.color = '#ffd700';
                 this.scoreValue = 300;
@@ -786,7 +792,7 @@ class Enemy {
                 this.vy = Math.sin(oozeAngle) * this.speed;
                 break;
             case 'vape':
-                this.radius = 24; // Bigger Lost Mary vape
+                this.radius = 26.4; // Bigger Lost Mary vape
                 this.hp = 1;
                 this.color = '#bf55ec'; // Purple body
                 this.scoreValue = 150;
@@ -806,7 +812,7 @@ class Enemy {
                 this.vy = Math.sin(bfAngle) * this.speed;
                 break;
             case 'tshirt':
-                this.radius = 20;
+                this.radius = 22;
                 this.hp = 1;
                 this.color = '#e040fb'; // tie-dye purple
                 this.scoreValue = 160;
@@ -827,7 +833,7 @@ class Enemy {
                 this.vy = Math.sin(mercAngle) * this.speed;
                 break;
             case 'false_teeth':
-                this.radius = 35;
+                this.radius = 42;
                 this.hp = 999;
                 this.color = '#ff4081';
                 this.scoreValue = 1500;
@@ -838,7 +844,7 @@ class Enemy {
                 this.vy = Math.sin(teethAngle) * this.speed;
                 break;
             case 'prison_gate':
-                this.radius = 22;
+                this.radius = 24.2;
                 this.speed = 0.5;
                 this.hp = 1;
                 this.color = '#78909c';
@@ -848,7 +854,7 @@ class Enemy {
                 this.vy = Math.sin(pgAngle) * this.speed;
                 break;
             case 'needle':
-                this.radius = 18;
+                this.radius = 19.8;
                 this.speed = 0.6;
                 this.hp = 1;
                 this.color = '#e0e0e0';
@@ -858,7 +864,7 @@ class Enemy {
                 this.vy = Math.sin(ndAngle) * this.speed;
                 break;
             case 'grad_cap':
-                this.radius = 20;
+                this.radius = 22;
                 this.speed = 0.55;
                 this.hp = 1;
                 this.color = '#212121';
@@ -868,7 +874,7 @@ class Enemy {
                 this.vy = Math.sin(gcAngle) * this.speed;
                 break;
             case 'padlocks':
-                this.radius = 25;
+                this.radius = 27.5;
                 this.speed = 0.5;
                 this.hp = 1;
                 this.color = '#ffd700';
@@ -878,7 +884,7 @@ class Enemy {
                 this.vy = Math.sin(plAngle) * this.speed;
                 break;
             case 'envelope':
-                this.radius = 16;
+                this.radius = 17.6;
                 this.speed = 0.65;
                 this.hp = 1;
                 this.color = '#ffffff';
@@ -1130,6 +1136,14 @@ class Enemy {
                     this.x += (dx / dist) * pursueSpeed;
                     this.y += (dy / dist) * pursueSpeed;
                 }
+                
+                // Sinister whining sound periodically
+                if (!this.soundTimer) this.soundTimer = 0;
+                this.soundTimer += deltaTime;
+                if (this.soundTimer > 2000 + Math.random() * 1500) {
+                    this.soundTimer = 0;
+                    window.audio.playMandipeterWhine();
+                }
             } else {
                 if (!this.leader || !enemies.includes(this.leader)) {
                     this.segmentType = 'head';
@@ -1170,6 +1184,7 @@ class Enemy {
                     const vx = (dx / dist) * peanutSpeed;
                     const vy = (dy / dist) * peanutSpeed;
                     enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'brown_peanut'));
+                    window.audio.playSewageShoot();
                 }
             }
         }
@@ -1210,6 +1225,7 @@ class Enemy {
             if (this.fireTimer > 2000) {
                 this.fireTimer = 0;
                 this.shootAtPlayer();
+                window.audio.playEdBungee();
             }
         }
         else if (this.type === 'labour_enemy') {
@@ -1242,6 +1258,14 @@ class Enemy {
                 this.x += (dx / dist) * this.speed;
                 this.y += (dy / dist) * this.speed;
             }
+            
+            // Brain psychic vibration periodically
+            if (!this.soundTimer) this.soundTimer = 0;
+            this.soundTimer += deltaTime;
+            if (this.soundTimer > 1800 + Math.random() * 1200) {
+                this.soundTimer = 0;
+                window.audio.playBrainVibrate();
+            }
         }
         else if (this.type === 'reform_mercedes') {
             this.x += this.vx;
@@ -1272,6 +1296,7 @@ class Enemy {
                     const vx = (dx / dist) * smokeSpeed;
                     const vy = (dy / dist) * smokeSpeed;
                     enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'diesel_smoke'));
+                    window.audio.playMercedesEngine();
                 }
             }
         }
@@ -1283,6 +1308,14 @@ class Enemy {
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
             if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            // Gums chomping sound periodically
+            if (!this.soundTimer) this.soundTimer = 0;
+            this.soundTimer += deltaTime;
+            if (this.soundTimer > 1800 + Math.random() * 1000) {
+                this.soundTimer = 0;
+                window.audio.playTeethChomp();
+            }
 
             // Destruct gums if all teeth are destroyed
             const hasTeeth = enemies.some(e => e.type === 'tooth' && e.parentBoss === this);
@@ -1317,13 +1350,13 @@ class Enemy {
                     smallWig.speed = (0.8 + Math.random() * 0.4) * 1.6;
                     enemies.push(smallWig);
                 }
-                window.audio.playShoot();
+                window.audio.playLordsGrumble();
             }
         }
         else if (this.type === 'tooth') {
             if (this.parentBoss && enemies.includes(this.parentBoss)) {
                 // Attached chomping radius
-                const chompRadius = 32 + Math.sin(Date.now() / 250) * 8;
+                const chompRadius = (32 + Math.sin(Date.now() / 250) * 8) * 1.2;
                 this.x = this.parentBoss.x + Math.cos(this.parentBoss.angle + this.angleOffset) * chompRadius;
                 this.y = this.parentBoss.y + Math.sin(this.parentBoss.angle + this.angleOffset) * chompRadius;
             } else {
@@ -1457,6 +1490,8 @@ class Enemy {
             ctx.restore();
         }
         else if (this.type === 'newspaper') {
+            ctx.save();
+            ctx.scale(1.1, 1.1);
             ctx.rotate(this.angle);
             ctx.fillStyle = '#ffffff';
             ctx.fillRect(-20, -15, 40, 30);
@@ -1473,6 +1508,7 @@ class Enemy {
             ctx.fillRect(1, 2, 16, 1.5);
             ctx.fillRect(-17, 6, 34, 1.5);
             ctx.fillRect(-17, 10, 24, 1.5);
+            ctx.restore();
         }
         else if (this.type === 'ballot_enemy') {
             // Chancellor's dark red briefcase
@@ -2184,6 +2220,7 @@ class Enemy {
         }
         else if (this.type === 'vape') {
             ctx.save();
+            ctx.scale(1.1, 1.1);
             ctx.rotate(this.angle * 0.2);
 
             // Mouthpiece (black, offset to the left)
@@ -2276,6 +2313,7 @@ class Enemy {
         }
         else if (this.type === 'tshirt') {
             ctx.save();
+            ctx.scale(1.1, 1.1);
             ctx.rotate(Math.sin(this.angle) * 0.12);
 
             ctx.fillStyle = '#e040fb';
@@ -2397,6 +2435,9 @@ class Enemy {
             ctx.fillRect(-24, 20, 6, 2);
         }
         else if (this.type === 'false_teeth') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            ctx.scale(1.2, 1.2);
             ctx.strokeStyle = '#ff4081';
             ctx.lineWidth = 10;
             ctx.lineCap = 'round';
@@ -2408,6 +2449,7 @@ class Enemy {
             ctx.beginPath();
             ctx.arc(0, 0, 27, 0, Math.PI * 2);
             ctx.fill();
+            ctx.restore();
         }
         else if (this.type === 'prison_gate') {
             ctx.save();
@@ -2452,6 +2494,7 @@ class Enemy {
         }
         else if (this.type === 'needle') {
             ctx.save();
+            ctx.scale(1.1, 1.1);
             // Point needle in direction of motion plus rotation offset
             const moveAngle = Math.atan2(this.vy, this.vx) + Math.PI / 4;
             ctx.rotate(moveAngle);
@@ -2554,6 +2597,7 @@ class Enemy {
         }
         else if (this.type === 'padlocks') {
             ctx.save();
+            ctx.scale(1.1, 1.1);
             ctx.rotate(this.angle * 0.08); // slow spin
 
             const drawSinglePadlock = (tx, ty, scale = 1.0) => {
@@ -3391,7 +3435,7 @@ function updateGame(deltaTime) {
 
     checkCollisions();
 
-    if (enemies.length === 0 && waveTransitionTimer === 0) {
+    if (enemies.length === 0 && waveTransitionTimer === 0 && (!player || !player.isInvincibleCheat)) {
         waveTransitionTimer = 150;
         showNotification("WAVE COMPLETE! EXTRA LIFE!");
         triggerScreenShake(5, 400);
@@ -3669,7 +3713,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.6', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 

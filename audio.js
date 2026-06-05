@@ -209,6 +209,261 @@ class RetroAudioEngine {
         }
     }
 
+    // Play characterful boss sound effects
+
+    // 1. Sewage Tank: Low, wet, gurgling sound (bubbly lowpass sweep)
+    playSewageShoot() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(90, time);
+        // Fast pitch modulation
+        osc.frequency.linearRampToValueAtTime(150, time + 0.1);
+        osc.frequency.linearRampToValueAtTime(45, time + 0.3);
+
+        filter.type = 'peaking';
+        filter.frequency.setValueAtTime(300, time);
+        filter.frequency.linearRampToValueAtTime(80, time + 0.3);
+        filter.Q.setValueAtTime(12, time);
+
+        gain.gain.setValueAtTime(0.45, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.32);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+
+        osc.start(time);
+        osc.stop(time + 0.33);
+    }
+
+    // 2. Lords Wig Boss: Dramatic royal fanfare chord/sweep
+    playWigShoot() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+
+        // Combine three oscillators for a majestic retro chord (A-major)
+        const frequencies = [440, 554.37, 659.25]; // A4, C#5, E5
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.25, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.45);
+
+        frequencies.forEach(freq => {
+            const osc = this.ctx.createOscillator();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.frequency.linearRampToValueAtTime(freq * 1.5, time + 0.4); // sweep up
+            osc.connect(gain);
+            osc.start(time);
+            osc.stop(time + 0.46);
+        });
+
+        gain.connect(this.masterVolume);
+    }
+
+    // playLordsGrumble: Low, grumpy grumbling sound (LFO-modulated low sawtooth/square wave)
+    playLordsGrumble() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const lfo = this.ctx.createOscillator();
+        const lfoGain = this.ctx.createGain();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(80, time);
+        // Pitch variation to sound like mumbling/grumbling speech
+        osc.frequency.linearRampToValueAtTime(110, time + 0.15);
+        osc.frequency.linearRampToValueAtTime(70, time + 0.3);
+        osc.frequency.linearRampToValueAtTime(90, time + 0.45);
+
+        lfo.type = 'square';
+        lfo.frequency.setValueAtTime(15, time); // 15Hz vibrato/grumble texture
+        lfoGain.gain.setValueAtTime(20, time);
+
+        gain.gain.setValueAtTime(0.4, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+
+        lfo.start(time);
+        osc.start(time);
+        lfo.stop(time + 0.52);
+        osc.stop(time + 0.52);
+    }
+
+    // 3. Ed Davey: Cartoon bouncy spring boing!
+    playEdBungee() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(150, time);
+        // Bouncy modulation
+        osc.frequency.exponentialRampToValueAtTime(400, time + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(200, time + 0.22);
+        osc.frequency.exponentialRampToValueAtTime(500, time + 0.32);
+        osc.frequency.exponentialRampToValueAtTime(80, time + 0.45);
+
+        gain.gain.setValueAtTime(0.35, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.46);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+
+        osc.start(time);
+        osc.stop(time + 0.47);
+    }
+
+    // 4. Exploding Brain: Psychic alarm/FM vibrato
+    playBrainVibrate() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const carrier = this.ctx.createOscillator();
+        const modulator = this.ctx.createOscillator();
+        const modGain = this.ctx.createGain();
+        const gain = this.ctx.createGain();
+
+        carrier.type = 'sawtooth';
+        carrier.frequency.setValueAtTime(600, time);
+        carrier.frequency.linearRampToValueAtTime(100, time + 0.4);
+
+        modulator.frequency.setValueAtTime(55, time); // 55Hz vibration
+        modGain.gain.setValueAtTime(180, time); // large FM index
+
+        gain.gain.setValueAtTime(0.28, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+        modulator.connect(modGain);
+        modGain.connect(carrier.frequency);
+        carrier.connect(gain);
+        gain.connect(this.masterVolume);
+
+        modulator.start(time);
+        carrier.start(time);
+        modulator.stop(time + 0.42);
+        carrier.stop(time + 0.42);
+    }
+
+    // 5. Mandipeter: Sinister snake-like hiss
+    playMandipeterHiss() {
+        if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = this.noiseBuffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(4000, time);
+        filter.frequency.exponentialRampToValueAtTime(1200, time + 0.28);
+        filter.Q.setValueAtTime(5, time);
+
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.35, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.3);
+
+        noiseNode.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+
+        noiseNode.start(time);
+        noiseNode.stop(time + 0.32);
+    }
+
+    // playMandipeterWhine: High-pitched cartoon whining sound
+    playMandipeterWhine() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(600, time);
+        // Sweep up and down to whine
+        osc.frequency.exponentialRampToValueAtTime(1200, time + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(800, time + 0.45);
+
+        gain.gain.setValueAtTime(0.2, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.5);
+
+        osc.connect(gain);
+        gain.connect(this.masterVolume);
+
+        osc.start(time);
+        osc.stop(time + 0.5);
+    }
+
+    // 6. Mercedes Boss: Sawtooth diesel engine revving
+    playMercedesEngine() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(45, time);
+        osc.frequency.linearRampToValueAtTime(130, time + 0.18);
+        osc.frequency.linearRampToValueAtTime(35, time + 0.35);
+
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(320, time);
+
+        gain.gain.setValueAtTime(0.45, time);
+        gain.gain.exponentialRampToValueAtTime(0.01, time + 0.36);
+
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+
+        osc.start(time);
+        osc.stop(time + 0.38);
+    }
+
+    // 7. False Teeth Boss: Woodblock chattering chomp
+    playTeethChomp() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+
+        // Quick triple-tap click (chomp)
+        const delayTimes = [0, 0.08, 0.16];
+        delayTimes.forEach(delay => {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(800, time + delay);
+            osc.frequency.linearRampToValueAtTime(200, time + delay + 0.04);
+
+            gain.gain.setValueAtTime(0.38, time + delay);
+            gain.gain.linearRampToValueAtTime(0.01, time + delay + 0.05);
+
+            osc.connect(gain);
+            gain.connect(this.masterVolume);
+
+            osc.start(time + delay);
+            osc.stop(time + delay + 0.06);
+        });
+    }
+
     // Play background looping retro synthesizer music
     startMusic() {
         if (this.isPlayingMusic) return;

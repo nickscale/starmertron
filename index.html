@@ -8,9 +8,21 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.3.6">
+    <link rel="stylesheet" href="style.css?v=1.3.8">
 </head>
 <body>
+    <!-- Portrait orientation warning for mobile devices -->
+    <div id="portrait-warning">
+        <div class="warning-content">
+            <div class="phone-icon-container">
+                <svg class="phone-icon" viewBox="0 0 24 24">
+                    <path d="M17 1.01L7 1c-1.1 0-2 .9-2 2v18c0 1.1.9 2 2 2h10c1.1 0 2-.9 2-2V3c0-1.1-.9-1.99-2-1.99zM17 19H7V5h10v14z"/>
+                </svg>
+            </div>
+            <p>PLEASE ROTATE YOUR DEVICE TO LANDSCAPE TO PLAY</p>
+        </div>
+    </div>
+
     <!-- Main Screen Area with CRT filter (Fills viewport) -->
     <div class="screen-container">
         <div class="crt-screen">
@@ -100,7 +112,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="audio.js?v=1.3.6"></script>
-    <script src="game.js?v=1.3.6"></script>
+    <script src="audio.js?v=1.3.8"></script>
+    <script src="game.js?v=1.3.8"></script>
 </body>
 </html>

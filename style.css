@@ -399,7 +399,7 @@ body {
 .screen-hud {
     position: relative;
     width: 100%;
-    height: 48px;
+    height: 60px;
     background: rgba(7, 9, 19, 0.9);
     border-bottom: none;
     display: flex;
@@ -415,7 +415,7 @@ body {
     align-items: center;
     gap: 8px;
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.65rem;
+    font-size: 0.9rem;
     letter-spacing: 1px;
 }
 
@@ -432,7 +432,7 @@ body {
     border: 1px solid var(--neon-cyan);
     color: var(--neon-cyan);
     font-family: 'Press Start 2P', cursive;
-    font-size: 0.55rem;
+    font-size: 0.75rem;
     padding: 6px 10px;
     border-radius: 4px;
     cursor: pointer;
@@ -455,8 +455,7 @@ body {
 
 /* Fullscreen Option */
 .fullscreen-option {
-    margin-top: 15px;
-    margin-bottom: 25px;
+    display: none !important;
 }
 
 .fullscreen-label {
@@ -684,61 +683,71 @@ body {
 }
 
 
-/* Portrait orientation panel for mobile touch controls */
-@media (max-width: 768px) and (orientation: portrait) {
-    .screen-container {
+/* Portrait orientation warning overlay */
+#portrait-warning {
+    display: none;
+}
+
+@media (max-width: 1024px) and (orientation: portrait), (pointer: coarse) and (orientation: portrait) {
+    #portrait-warning {
+        display: flex !important;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: radial-gradient(circle at center, #1c1a27 0%, #070913 100%);
+        color: #f0f0f5;
+        z-index: 999999;
         flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 30px;
+        box-sizing: border-box;
+        font-family: 'Press Start 2P', cursive;
     }
     
-    .crt-screen {
-        flex: 1;
-        width: 100%;
-        height: auto;
-    }
-    
-    .screen-hud {
-        height: 10vh !important;
-        min-height: 10vh !important;
-        flex-direction: row !important;
-        flex-wrap: wrap !important;
-        justify-content: space-around !important;
-        align-items: center !important;
-        gap: 6px !important;
-        padding: 5px 10px !important;
+    #portrait-warning .warning-content {
+        max-width: 450px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 25px;
     }
 
-    .touch-controls-container {
+    #portrait-warning p {
+        font-size: 0.85rem;
+        line-height: 1.8;
+        color: var(--neon-cyan);
+        text-shadow: var(--glow-shadow-cyan);
+    }
+    
+    .phone-icon-container {
+        width: 80px;
+        height: 80px;
         position: relative;
-        bottom: 0;
-        left: 0;
+        margin-bottom: 15px;
+    }
+
+    .phone-icon {
         width: 100%;
-        height: 30vh !important;
-        background: #0d0d12;
-        border-top: 3px solid #1a1a26;
-        display: flex !important;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 20px 20px 0 20px;
-        pointer-events: auto;
-        flex-shrink: 0;
+        height: 100%;
+        fill: var(--neon-pink);
+        filter: drop-shadow(0 0 8px var(--neon-pink));
+        animation: rotatePhone 2s infinite ease-in-out;
+    }
+
+    @keyframes rotatePhone {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+        50% {
+            transform: rotate(-90deg);
+        }
     }
     
-    .joystick-outer {
-        width: 110px;
-        height: 110px;
-    }
-    
-    .joystick-inner {
-        width: 45px;
-        height: 45px;
-    }
-    
-    .touch-action-btn {
-        width: 60px;
-        height: 60px;
-    }
-    
-    #btn-touch-reverse {
-        margin-top: 12px;
+    .screen-container {
+        display: none !important;
     }
 }
