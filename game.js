@@ -134,6 +134,24 @@ function resizeCanvas() {
         ARENA_HEIGHT = height / scale;
     }
     ARENA_CEILING = 0;
+
+    // Clamp all existing entities to new boundaries so they don't get trapped off-screen
+    if (player) {
+        player.x = Math.max(player.radius + 15, Math.min(ARENA_WIDTH - player.radius - 15, player.x));
+        player.y = Math.max(player.radius + ARENA_CEILING, Math.min(ARENA_HEIGHT - player.radius - 15, player.y));
+    }
+    if (enemies && enemies.length > 0) {
+        enemies.forEach(enemy => {
+            enemy.x = Math.max(enemy.radius + 15, Math.min(ARENA_WIDTH - enemy.radius - 15, enemy.x));
+            enemy.y = Math.max(enemy.radius + ARENA_CEILING + 10, Math.min(ARENA_HEIGHT - enemy.radius - 15, enemy.y));
+        });
+    }
+    if (collectibles && collectibles.length > 0) {
+        collectibles.forEach(col => {
+            col.x = Math.max(col.radius + 15, Math.min(ARENA_WIDTH - col.radius - 15, col.x));
+            col.y = Math.max(col.radius + ARENA_CEILING + 10, Math.min(ARENA_HEIGHT - col.radius - 15, col.y));
+        });
+    }
 }
 window.addEventListener('resize', resizeCanvas);
 resizeCanvas(); // Trigger immediately to fit screen layout
@@ -3649,7 +3667,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
