@@ -651,8 +651,8 @@ body {
 
 @media (max-height: 580px) {
     .screen-overlay {
-        justify-content: flex-start; /* scroll from top when space is tight */
-        padding-top: 20px;
+        justify-content: center;
+        padding: 20px;
     }
     
     .title-logo {
@@ -698,14 +698,14 @@ body {
     }
     
     .screen-hud {
-        height: 20vh !important;
-        min-height: 20vh !important;
-        flex-direction: column !important;
-        flex-wrap: nowrap !important;
-        justify-content: center !important;
+        height: 10vh !important;
+        min-height: 10vh !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: space-around !important;
         align-items: center !important;
-        gap: 10px !important;
-        padding: 15px 10px !important;
+        gap: 6px !important;
+        padding: 5px 10px !important;
     }
 
     .touch-controls-container {
@@ -713,7 +713,7 @@ body {
         bottom: 0;
         left: 0;
         width: 100%;
-        height: 40vh !important;
+        height: 30vh !important;
         background: #0d0d12;
         border-top: 3px solid #1a1a26;
         display: flex !important;

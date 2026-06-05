@@ -3667,7 +3667,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.3.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.3.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
