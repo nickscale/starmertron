@@ -126,6 +126,9 @@ newspaperImg.src = 'newspaper.png';
 const bloodBagImg = new Image();
 bloodBagImg.src = 'blood_bag.png';
 
+const breakfastImg = new Image();
+breakfastImg.src = 'breakfast.png';
+
 
 
 
@@ -903,16 +906,7 @@ class Enemy {
                 this.vx = Math.cos(plAngle) * this.speed;
                 this.vy = Math.sin(plAngle) * this.speed;
                 break;
-            case 'envelope':
-                this.radius = 17.6;
-                this.speed = 0.65;
-                this.hp = 1;
-                this.color = '#ffffff';
-                this.scoreValue = 120;
-                const evAngle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(evAngle) * this.speed;
-                this.vy = Math.sin(evAngle) * this.speed;
-                break;
+
             case 'lord_wig_boss':
                 this.radius = 50; // giant boss size
                 this.hp = 20;
@@ -1413,7 +1407,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'prison_gate', 'needle', 'grad_cap', 'padlocks', 'envelope'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'prison_gate', 'needle', 'grad_cap', 'padlocks'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -2196,54 +2190,8 @@ class Enemy {
         }
         else if (this.type === 'breakfast') {
             ctx.save();
-            ctx.rotate(this.angle * 0.1);
-            ctx.fillStyle = '#e0f7fa';
-            ctx.strokeStyle = '#b2ebf2';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.strokeStyle = 'rgba(0,0,0,0.06)';
-            ctx.lineWidth = 1.0;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius - 4, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Fried eggs
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.ellipse(-7, -4, 6, 5, Math.PI/4, 0, Math.PI * 2);
-            ctx.ellipse(-2, 7, 7, 5.5, -Math.PI/6, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#ffd54f';
-            ctx.beginPath();
-            ctx.arc(-7, -4, 2.5, 0, Math.PI * 2);
-            ctx.arc(-2, 7, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Sausage
-            ctx.fillStyle = '#8d6e63';
-            ctx.strokeStyle = '#5d4037';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.ellipse(8, -6, 10, 4, -Math.PI/4, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Bacon strips
-            ctx.strokeStyle = '#d32f2f';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.moveTo(3, 4);
-            ctx.quadraticCurveTo(7, 8, 11, 4);
-            ctx.quadraticCurveTo(15, 0, 18, 5);
-            ctx.moveTo(0, -1);
-            ctx.quadraticCurveTo(4, 3, 8, -1);
-            ctx.quadraticCurveTo(12, -5, 15, 0);
-            ctx.stroke();
+            ctx.rotate(this.angle * 0.15); // slow rotate
+            ctx.drawImage(breakfastImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'tshirt') {
@@ -2484,40 +2432,7 @@ class Enemy {
 
             ctx.restore();
         }
-        else if (this.type === 'envelope') {
-            ctx.save();
-            ctx.rotate(this.angle * 0.15); // moderate spin
 
-            // White rectangular envelope body
-            ctx.fillStyle = '#ffffff';
-            ctx.strokeStyle = '#b0bec5'; // light blue-grey border
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.roundRect(-this.radius * 0.95, -this.radius * 0.65, this.radius * 1.9, this.radius * 1.3, 1);
-            ctx.fill();
-            ctx.stroke();
-
-            // Flap triangles on back of envelope
-            ctx.strokeStyle = '#90a4ae';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(-this.radius * 0.95, -this.radius * 0.65);
-            ctx.lineTo(0, this.radius * 0.1);
-            ctx.lineTo(this.radius * 0.95, -this.radius * 0.65);
-            
-            ctx.moveTo(-this.radius * 0.95, this.radius * 0.65);
-            ctx.lineTo(0, this.radius * 0.1);
-            ctx.lineTo(this.radius * 0.95, this.radius * 0.65);
-            ctx.stroke();
-
-            // Red wax seal in the middle
-            ctx.fillStyle = '#ff1744';
-            ctx.beginPath();
-            ctx.arc(0, this.radius * 0.08, 3.2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-        }
         else if (this.type === 'lord_wig_boss') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
@@ -3086,7 +3001,7 @@ function spawnWave() {
     }
     // Scatter scandal enemies in every wave
     const numScandalEnemies = 4 + Math.floor(currentWave / 4);
-    const scandalTypes = ['prison_gate', 'needle', 'grad_cap', 'padlocks', 'envelope'];
+    const scandalTypes = ['prison_gate', 'needle', 'grad_cap', 'padlocks'];
     for (let i = 0; i < numScandalEnemies; i++) {
         const randomType = scandalTypes[Math.floor(Math.random() * scandalTypes.length)];
         spawnEnemy(randomType);
@@ -3562,7 +3477,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.4.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
