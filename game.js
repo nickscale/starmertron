@@ -412,7 +412,7 @@ class Bullet {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 7 : (type === 'diesel_smoke' ? 14 : 4))));
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 14 : (type === 'diesel_smoke' ? 14 : 4))));
         this.origin = origin;
         this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
     }
@@ -586,7 +586,7 @@ class Enemy {
                 this.bobOffset = Math.random() * Math.PI * 2;
                 break;
             case 'newspaper': 
-                this.radius = 22;
+                this.radius = 25.3;
                 this.speed = 0.7 + currentWave * 0.06;
                 this.hp = 1;
                 this.color = '#ffffff';
@@ -735,7 +735,7 @@ class Enemy {
                 this.vy = Math.sin(catAngle) * this.speed;
                 break;
             case 'cigarette':
-                this.radius = 27; // enlarged
+                this.radius = 31; // enlarged
                 this.hp = 1;
                 this.color = '#eeeeee';
                 this.scoreValue = 150;
@@ -795,7 +795,7 @@ class Enemy {
                 this.vy = Math.sin(bikAngle) * this.speed;
                 break;
             case 'banknote':
-                this.radius = 27; // enlarged
+                this.radius = 31; // enlarged
                 this.hp = 1;
                 this.color = '#4cfc4c';
                 this.scoreValue = 180;
@@ -825,7 +825,7 @@ class Enemy {
                 this.vy = Math.sin(vapeAngle) * this.speed;
                 break;
             case 'breakfast':
-                this.radius = 22;
+                this.radius = 25.3;
                 this.hp = 1;
                 this.color = '#e0f7fa'; // Plate white
                 this.scoreValue = 180;
@@ -877,7 +877,7 @@ class Enemy {
                 this.vy = Math.sin(pgAngle) * this.speed;
                 break;
             case 'needle':
-                this.radius = 19.8;
+                this.radius = 22.8;
                 this.speed = 0.6;
                 this.hp = 1;
                 this.color = '#e0e0e0';
@@ -1157,6 +1157,14 @@ class Enemy {
                 if (this.soundTimer > 2000 + Math.random() * 1500) {
                     this.soundTimer = 0;
                     window.audio.playMandipeterWhine();
+                }
+
+                // Shoot at player periodically
+                if (!this.fireTimer) this.fireTimer = 0;
+                this.fireTimer += deltaTime;
+                if (this.fireTimer > 1500 + Math.random() * 1000) {
+                    this.fireTimer = 0;
+                    this.shootAtPlayer();
                 }
             } else {
                 if (!this.leader || !enemies.includes(this.leader)) {
@@ -3477,7 +3485,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.4.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
