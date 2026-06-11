@@ -107,6 +107,17 @@ euroCentImg.src = 'euro_cent.png';
 const handcuffsImg = new Image();
 handcuffsImg.src = 'handcuffs.png';
 
+// Preload newly replaced sprites (banknotes, cigarettes, student cap)
+const banknotesImg = new Image();
+banknotesImg.src = 'banknotes.png';
+
+const cigarettesImg = new Image();
+cigarettesImg.src = 'cigarettes.png';
+
+const studentCapImg = new Image();
+studentCapImg.src = 'student_cap.png';
+
+
 
 
 // Input Management
@@ -1999,31 +2010,8 @@ class Enemy {
         }
         else if (this.type === 'cigarette') {
             ctx.save();
-            const originalRadius = 18;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // White cigarette cylinder with glowing orange tip
             ctx.rotate(this.angle);
-            // White tube
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-originalRadius, -5, originalRadius * 1.3, 10);
-            ctx.strokeStyle = '#bdbdbd';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(-originalRadius, -5, originalRadius * 1.3, 10);
-
-            // Orange filter
-            ctx.fillStyle = '#fb8c00';
-            ctx.fillRect(-originalRadius, -5, originalRadius * 0.5, 10);
-
-            // Glowing tip (red/yellow/ash)
-            ctx.fillStyle = '#ff3d00'; // glowing orange-red
-            ctx.fillRect(originalRadius * 0.3, -5, originalRadius * 0.5, 10);
-            ctx.fillStyle = '#ffeb3b'; // center glow
-            ctx.fillRect(originalRadius * 0.3, -2, 3, 4);
-            
-            // Ash
-            ctx.fillStyle = '#9e9e9e';
-            ctx.fillRect(originalRadius * 0.8, -3, 3, 6);
+            ctx.drawImage(cigarettesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'booze_enemy') {
@@ -2153,32 +2141,8 @@ class Enemy {
         }
         else if (this.type === 'banknote') {
             ctx.save();
-            const originalRadius = 18;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // Green currency banknote
             ctx.rotate(this.angle);
-            ctx.fillStyle = '#81c784'; // green note
-            ctx.fillRect(-originalRadius * 1.1, -originalRadius * 0.6, originalRadius * 2.2, originalRadius * 1.2);
-            ctx.strokeStyle = '#2e7d32'; // dark border
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(-originalRadius * 1.1, -originalRadius * 0.6, originalRadius * 2.2, originalRadius * 1.2);
-
-            // Details inside note
-            ctx.strokeStyle = '#388e3c';
-            ctx.strokeRect(-originalRadius * 0.9, -originalRadius * 0.45, originalRadius * 1.8, originalRadius * 0.9);
-            
-            // Centered oval portrait representation
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 6, 4.5, 0, 0, Math.PI * 2);
-            ctx.stroke();
-            
-            // £ text
-            ctx.fillStyle = '#1b5e20';
-            ctx.font = 'bold 8px monospace';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('£', 0, 0);
+            ctx.drawImage(banknotesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'ooze_bucket') {
@@ -2552,47 +2516,7 @@ class Enemy {
         else if (this.type === 'grad_cap') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.1); // subtle sway
-
-            // Tassel (yellow/gold) drawn behind
-            ctx.strokeStyle = '#ffd54f'; // golden tassel cord
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.moveTo(0, -4);
-            ctx.quadraticCurveTo(this.radius * 0.5, -this.radius * 0.1, this.radius * 0.7, this.radius * 0.4);
-            ctx.stroke();
-            ctx.fillStyle = '#ffca28'; // tassel fringe
-            ctx.beginPath();
-            ctx.arc(this.radius * 0.7, this.radius * 0.4, 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Skull cap (base of mortarboard)
-            ctx.fillStyle = '#37474f'; // dark blue-grey skull cap
-            ctx.strokeStyle = '#212121';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.ellipse(0, 4, this.radius * 0.5, this.radius * 0.35, 0, 0, Math.PI);
-            ctx.fill();
-            ctx.stroke();
-
-            // Mortarboard Diamond (top flat part)
-            ctx.fillStyle = '#212121'; // charcoal black
-            ctx.strokeStyle = '#37474f';
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.moveTo(0, -this.radius * 0.6); // top corner
-            ctx.lineTo(this.radius * 0.95, -this.radius * 0.1); // right corner
-            ctx.lineTo(0, this.radius * 0.4); // bottom corner
-            ctx.lineTo(-this.radius * 0.95, -this.radius * 0.1); // left corner
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Center button on top of cap
-            ctx.fillStyle = '#424242';
-            ctx.beginPath();
-            ctx.arc(0, -this.radius * 0.1, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-
+            ctx.drawImage(studentCapImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'padlocks') {
@@ -3718,7 +3642,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.0', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.4.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
