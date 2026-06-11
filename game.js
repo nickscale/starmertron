@@ -114,8 +114,8 @@ banknotesImg.src = 'banknotes.png';
 const cigarettesImg = new Image();
 cigarettesImg.src = 'cigarettes.png';
 
-const studentCapImg = new Image();
-studentCapImg.src = 'student_cap.png';
+const diplomaImg = new Image();
+diplomaImg.src = 'diploma.png';
 
 const brainBossImg = new Image();
 brainBossImg.src = 'brain_boss.png';
@@ -2392,7 +2392,7 @@ class Enemy {
         else if (this.type === 'grad_cap') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.1); // subtle sway
-            ctx.drawImage(studentCapImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.drawImage(diplomaImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'padlocks') {
@@ -3485,7 +3485,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.4.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
