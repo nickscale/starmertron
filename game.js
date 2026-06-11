@@ -117,6 +117,15 @@ cigarettesImg.src = 'cigarettes.png';
 const studentCapImg = new Image();
 studentCapImg.src = 'student_cap.png';
 
+const brainBossImg = new Image();
+brainBossImg.src = 'brain_boss.png';
+
+const newspaperImg = new Image();
+newspaperImg.src = 'newspaper.png';
+
+const bloodBagImg = new Image();
+bloodBagImg.src = 'blood_bag.png';
+
 
 
 
@@ -1502,23 +1511,8 @@ class Enemy {
         }
         else if (this.type === 'newspaper') {
             ctx.save();
-            ctx.scale(1.1, 1.1);
             ctx.rotate(this.angle);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-20, -15, 40, 30);
-            ctx.strokeStyle = '#8c8ca3';
-            ctx.lineWidth = 1.8;
-            ctx.strokeRect(-20, -15, 40, 30);
-            
-            ctx.fillStyle = '#ff2a2a';
-            ctx.fillRect(-17, -12, 34, 6);
-            
-            ctx.fillStyle = '#444444';
-            ctx.fillRect(-17, -3, 34, 2);
-            ctx.fillRect(-17, 2, 16, 1.5);
-            ctx.fillRect(1, 2, 16, 1.5);
-            ctx.fillRect(-17, 6, 34, 1.5);
-            ctx.fillRect(-17, 10, 24, 1.5);
+            ctx.drawImage(newspaperImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'ballot_enemy') {
@@ -1814,31 +1808,8 @@ class Enemy {
             ctx.stroke();
             ctx.restore();
 
-            // Wrinkled pink brain
-            ctx.fillStyle = '#ff80ab'; // pink brain
-            ctx.strokeStyle = '#c51162'; // dark pink outline
-            ctx.lineWidth = this.type === 'exploding_brain' ? 1.8 : 1.2;
-
-            // Draw two halves of brain
-            ctx.beginPath();
-            ctx.arc(-this.radius * 0.35, 0, this.radius * 0.65, 0, Math.PI * 2);
-            ctx.arc(this.radius * 0.35, 0, this.radius * 0.65, 0, Math.PI * 2);
-            ctx.arc(0, -this.radius * 0.25, this.radius * 0.65, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Draw wrinkles inside
-            ctx.beginPath();
-            ctx.moveTo(-this.radius * 0.4, -this.radius * 0.2);
-            ctx.quadraticCurveTo(-this.radius * 0.2, -this.radius * 0.5, 0, -this.radius * 0.2);
-            ctx.moveTo(this.radius * 0.4, -this.radius * 0.2);
-            ctx.quadraticCurveTo(this.radius * 0.2, -this.radius * 0.5, 0, -this.radius * 0.2);
-            
-            ctx.moveTo(-this.radius * 0.5, this.radius * 0.1);
-            ctx.quadraticCurveTo(-this.radius * 0.2, this.radius * 0.3, -this.radius * 0.1, this.radius * 0.1);
-            ctx.moveTo(this.radius * 0.5, this.radius * 0.1);
-            ctx.quadraticCurveTo(this.radius * 0.2, this.radius * 0.3, this.radius * 0.1, this.radius * 0.1);
-            ctx.stroke();
+            // Draw the brain image asset
+            ctx.drawImage(brainBossImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
 
             ctx.restore();
         }
@@ -2458,59 +2429,8 @@ class Enemy {
         }
         else if (this.type === 'needle') {
             ctx.save();
-            ctx.scale(1.1, 1.1);
-            // Point needle in direction of motion plus rotation offset
-            const moveAngle = Math.atan2(this.vy, this.vx) + Math.PI / 4;
-            ctx.rotate(moveAngle);
-
-            // Syringe barrel (clear white cylinder)
-            ctx.strokeStyle = '#eceff1';
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.roundRect(-4, -12, 8, 20, 1);
-            ctx.fill();
-            ctx.stroke();
-
-            // Barrel lines (measurement markings)
-            ctx.strokeStyle = '#90a4ae';
-            ctx.lineWidth = 1.0;
-            ctx.beginPath();
-            ctx.moveTo(-4, -6); ctx.lineTo(-1, -6);
-            ctx.moveTo(-4, -2); ctx.lineTo(-1, -2);
-            ctx.moveTo(-4, 2); ctx.lineTo(-1, 2);
-            ctx.moveTo(-4, 6); ctx.lineTo(-1, 6);
-            ctx.stroke();
-
-            // Plunger (dark grey line and top thumb rest)
-            ctx.strokeStyle = '#78909c';
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.moveTo(0, 8);
-            ctx.lineTo(0, 14); // plunger shaft
-            ctx.moveTo(-5, 14);
-            ctx.lineTo(5, 14); // thumb rest
-            ctx.stroke();
-
-            // Needle tip (thin metallic grey line)
-            ctx.strokeStyle = '#b0bec5';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.moveTo(0, -12);
-            ctx.lineTo(0, -22);
-            ctx.stroke();
-
-            // Drop of blood (at the needle tip)
-            const dripOffset = Math.sin(Date.now() / 150) * 1.5;
-            ctx.fillStyle = '#ff1744'; // Bright blood red
-            ctx.beginPath();
-            ctx.moveTo(0, -22 - dripOffset);
-            // Tear drop shape
-            ctx.bezierCurveTo(-3, -25 - dripOffset, -3, -28 - dripOffset, 0, -28 - dripOffset);
-            ctx.bezierCurveTo(3, -28 - dripOffset, 3, -25 - dripOffset, 0, -22 - dripOffset);
-            ctx.closePath();
-            ctx.fill();
-
+            ctx.rotate(this.angle * 0.4); // slow spin
+            ctx.drawImage(bloodBagImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'grad_cap') {
@@ -3642,7 +3562,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.4.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
