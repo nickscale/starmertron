@@ -479,7 +479,7 @@ class Bullet {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 14 : (type === 'diesel_smoke' ? 14 : 4))));
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 28 : (type === 'diesel_smoke' ? 14 : 4))));
         this.origin = origin;
         this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
         this.bounceCount = 0;
@@ -767,7 +767,7 @@ class Enemy {
                 this.vy = Math.sin(sewageAngle) * this.speed;
                 break;
             case 'euro_chomper':
-                this.radius = 44;
+                this.radius = 22;
                 this.hp = 1;
                 this.color = '#3f51b5';
                 this.scoreValue = 250;
@@ -3073,7 +3073,7 @@ function spawnWave() {
                 segment.segmentType = 'head';
                 segment.vx = 2.2;
                 segment.directionY = 1;
-                segment.hp = 20; // Head starts with 20 HP
+                segment.hp = 10; // Head starts with 10 HP
             } else {
                 segment.segmentType = 'body';
                 segment.leader = lastSegment;
@@ -3126,7 +3126,7 @@ function spawnWave() {
                 segment.segmentType = 'head';
                 segment.vx = 2.2;
                 segment.directionY = 1;
-                segment.hp = 20; // Head starts with 20 HP
+                segment.hp = 10; // Head starts with 10 HP
             } else {
                 segment.segmentType = 'body';
                 segment.leader = lastSegment;
@@ -4108,7 +4108,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.8.0', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.8.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
