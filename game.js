@@ -8,8 +8,12 @@ let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
 let score = 0;
 let hiScore = localStorage.getItem('starmertron_hiscore') || 50000;
 let lives = 10; // Start with 10 lives
-let currentWave = 2;
+let currentWave = 1;
 let waveTransitionTimer = 0;
+let waveCompleteDelayTimer = 0;
+let waveStartDelayTimer = 0;
+let timeSinceLastKill = 0;
+let bombSpawnCooldownTimer = 0;
 let shakeTime = 0;
 let shakeIntensity = 0;
 
@@ -92,9 +96,9 @@ greenLogoImg.src = 'green_logo.png';
 const libdemLogoImg = new Image();
 libdemLogoImg.src = 'libdem_logo.png';
 
-// Preload Mandipeter head image
-const mandipeterFaceImg = new Image();
-mandipeterFaceImg.src = 'mandipeter_face.png';
+// Preload Mandipede head image
+const mandipedeFaceImg = new Image();
+mandipedeFaceImg.src = 'mandipede_face.png';
 
 // Preload Euro sprite and cent images
 const euroSpriteImg = new Image();
@@ -129,6 +133,40 @@ bloodBagImg.src = 'blood_bag.png';
 const breakfastImg = new Image();
 breakfastImg.src = 'breakfast.png';
 
+const lettuceImg = new Image();
+lettuceImg.src = 'lettuce.png';
+
+const mopHeadImg = new Image();
+mopHeadImg.src = 'mop_head.png';
+
+const pigImg = new Image();
+pigImg.src = 'pig.png';
+
+const tabloidImg = new Image();
+tabloidImg.src = 'tabloid.png';
+
+const prisonGateImg = new Image();
+prisonGateImg.src = 'prison_gate.png';
+
+const englishFlagImg = new Image();
+englishFlagImg.src = 'english_flag.png';
+
+const whatsappImg = new Image();
+whatsappImg.src = 'whatsapp.png';
+
+const cannabisImg = new Image();
+cannabisImg.src = 'cannabis.png';
+
+const tieDyeImg = new Image();
+tieDyeImg.src = 'tie_dye.png';
+
+const labourLogoImg = new Image();
+labourLogoImg.src = 'labour_party_logo_sprite.png';
+
+const bonusRoseImg = new Image();
+bonusRoseImg.src = 'bonus_rose.png';
+
+
 
 
 
@@ -148,13 +186,17 @@ function resizeCanvas() {
     canvas.width = width;
     canvas.height = height;
 
-    const baseWidth = isTouchDevice ? 700 : 1024;
-    const baseHeight = isTouchDevice ? 525 : 768;
+    // Calculate aspect ratio clamped between 9:16 (tall) and 16:9 (wide)
+    let aspect = width / height;
+    aspect = Math.max(9 / 16, Math.min(16 / 9, aspect));
 
-    const scale = Math.min(width / baseWidth, height / baseHeight);
-    if (scale > 0) {
-        ARENA_WIDTH = width / scale;
-        ARENA_HEIGHT = height / scale;
+    // Limit longest dimension to 1024 pixels to ensure consistent coordinate sizes and speeds
+    if (aspect >= 1) {
+        ARENA_WIDTH = 1024;
+        ARENA_HEIGHT = 1024 / aspect;
+    } else {
+        ARENA_HEIGHT = 1024;
+        ARENA_WIDTH = 1024 * aspect;
     }
     ARENA_CEILING = 0;
 
@@ -181,13 +223,13 @@ resizeCanvas(); // Trigger immediately to fit screen layout
 
 // Key Listeners
 window.addEventListener('keydown', (e) => {
-    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Spacebar'].includes(e.key)) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
     }
     
     keys[e.key.toLowerCase()] = true;
 
-    if (e.key === ' ' || e.key === 'Spacebar') {
+    if (e.key === 'Shift') {
         isStrafing = true;
     }
 
@@ -227,7 +269,7 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     keys[e.key.toLowerCase()] = false;
     
-    if (e.key === ' ' || e.key === 'Spacebar') {
+    if (e.key === 'Shift') {
         isStrafing = false;
     }
 });
@@ -316,8 +358,9 @@ class Player {
         this.fireRate = 135; 
         this.invulnerabilityFrames = 120;
         this.isInvincibleCheat = false; // Secret cheat mode state
-        this.isReverseFireMode = false; // Secret reverse fire state
         this.bonusInvincibilityTimer = 0; // 3 seconds bonus invincibility (ms)
+        this.threeWayTimer = 0; // Three-way firing powerup timer (ms)
+        this.bouncyShotsTimer = 0; // Bouncy shots powerup timer (ms)
     }
 
     update(deltaTime) {
@@ -366,17 +409,41 @@ class Player {
                 this.bonusInvincibilityTimer = 0;
             }
         }
+
+        if (this.threeWayTimer > 0) {
+            this.threeWayTimer -= deltaTime;
+            if (this.threeWayTimer < 0) {
+                this.threeWayTimer = 0;
+            }
+        }
+
+        if (this.bouncyShotsTimer > 0) {
+            this.bouncyShotsTimer -= deltaTime;
+            if (this.bouncyShotsTimer < 0) {
+                this.bouncyShotsTimer = 0;
+            }
+        }
     }
 
     shoot() {
         const bulletSpeed = 8.0; 
-        const shootAngle = keys['r'] ? this.facingAngle + Math.PI : this.facingAngle;
+        const shootAngle = this.facingAngle;
         const bx = this.x + Math.cos(shootAngle) * 20; // Spawn closer to floating mouth
         const by = this.y + Math.sin(shootAngle) * 20;
-        const vx = Math.cos(shootAngle) * bulletSpeed;
-        const vy = Math.sin(shootAngle) * bulletSpeed;
 
-        bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+        if (this.threeWayTimer > 0) {
+            // Three-way splay: center, left (-18 degrees / -0.314 rad), right (+18 degrees / +0.314 rad)
+            const angles = [shootAngle, shootAngle - 0.314, shootAngle + 0.314];
+            angles.forEach(angle => {
+                const vx = Math.cos(angle) * bulletSpeed;
+                const vy = Math.sin(angle) * bulletSpeed;
+                bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+            });
+        } else {
+            const vx = Math.cos(shootAngle) * bulletSpeed;
+            const vy = Math.sin(shootAngle) * bulletSpeed;
+            bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+        }
         window.audio.playShoot();
     }
 
@@ -415,6 +482,7 @@ class Bullet {
         this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 14 : (type === 'diesel_smoke' ? 14 : 4))));
         this.origin = origin;
         this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
+        this.bounceCount = 0;
     }
 
     update() {
@@ -430,6 +498,39 @@ class Bullet {
             // Trigger splat sound
             window.audio.playPlayerDeath(); // low crash splat
             this.y = ARENA_HEIGHT + 50; // Force cleanup out of bounds
+        }
+
+        // Bouncy shots check (only for player bullets if bouncy timer is active)
+        if (this.origin === 'player' && player && player.bouncyShotsTimer > 0) {
+            // Left boundary
+            if (this.x - this.radius <= 15) {
+                this.x = 15 + this.radius + 1;
+                this.vx = Math.abs(this.vx);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+            // Right boundary
+            else if (this.x + this.radius >= ARENA_WIDTH - 15) {
+                this.x = ARENA_WIDTH - 15 - this.radius - 1;
+                this.vx = -Math.abs(this.vx);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+
+            // Top boundary
+            if (this.y - this.radius <= ARENA_CEILING + 5) {
+                this.y = ARENA_CEILING + 5 + this.radius + 1;
+                this.vy = Math.abs(this.vy);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+            // Bottom boundary
+            else if (this.y + this.radius >= ARENA_HEIGHT - 15) {
+                this.y = ARENA_HEIGHT - 15 - this.radius - 1;
+                this.vy = -Math.abs(this.vy);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+
+            if (this.bounceCount > 4) {
+                this.x = -100; // Force cleanup out of bounds
+            }
         }
     }
 
@@ -552,7 +653,7 @@ class Enemy {
         this.y = y;
         this.startX = x;
         this.startY = y;
-        this.type = type; // 'swarmer', 'bouncer', 'shooter', 'wig', 'tory', 'reform', 'green', 'libdem', 'mandipeter', 'newspaper', 'ballot_enemy'
+        this.type = type; // 'swarmer', 'bouncer', 'shooter', 'wig', 'tory', 'reform', 'green', 'libdem', 'mandipede', 'newspaper', 'ballot_enemy'
         this.angle = 0;
         this.vx = 0;
         this.vy = 0;
@@ -643,7 +744,7 @@ class Enemy {
                 this.dropTimer = 0;
                 this.vx = 2.2;
                 break;
-            case 'mandipeter': // Boss centipede segment
+            case 'mandipede': // Boss centipede segment
                 this.radius = 18;
                 this.hp = 1;
                 const blueShades = ['#00e5ff', '#00b0ff', '#2979ff', '#3d5afe', '#1a237e', '#0d47a1', '#002f6c', '#4fc3f7', '#0288d1'];
@@ -666,7 +767,7 @@ class Enemy {
                 this.vy = Math.sin(sewageAngle) * this.speed;
                 break;
             case 'euro_chomper':
-                this.radius = 22;
+                this.radius = 44;
                 this.hp = 1;
                 this.color = '#3f51b5';
                 this.scoreValue = 250;
@@ -834,6 +935,66 @@ class Enemy {
                 this.vx = Math.cos(bfAngle) * this.speed;
                 this.vy = Math.sin(bfAngle) * this.speed;
                 break;
+            case 'lettuce':
+                this.radius = 25.3;
+                this.hp = 1;
+                this.color = '#4caf50'; // green
+                this.scoreValue = 150;
+                this.speed = 0.55;
+                const letAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(letAngle) * this.speed;
+                this.vy = Math.sin(letAngle) * this.speed;
+                break;
+            case 'mop_head':
+                this.radius = 25.3;
+                this.hp = 1;
+                this.color = '#e0e0e0'; // grey/white
+                this.scoreValue = 150;
+                this.speed = 0.5;
+                const mopAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(mopAngle) * this.speed;
+                this.vy = Math.sin(mopAngle) * this.speed;
+                break;
+            case 'pig':
+                this.radius = 27;
+                this.hp = 1;
+                this.color = '#ff80ab'; // pinkish
+                this.scoreValue = 180;
+                this.speed = 0.6;
+                const pigAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(pigAngle) * this.speed;
+                this.vy = Math.sin(pigAngle) * this.speed;
+                break;
+            case 'tabloid':
+                this.radius = 25.3;
+                this.hp = 1;
+                this.color = '#ffffff'; // white
+                this.scoreValue = 150;
+                this.speed = 0.55;
+                const tabAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tabAngle) * this.speed;
+                this.vy = Math.sin(tabAngle) * this.speed;
+                break;
+            case 'english_flag':
+                this.radius = 26;
+                this.hp = 1;
+                this.color = '#ffffff'; // white background flag
+                this.scoreValue = 180;
+                this.speed = 0.55;
+                const efAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(efAngle) * this.speed;
+                this.vy = Math.sin(efAngle) * this.speed;
+                break;
+            case 'whatsapp':
+                this.radius = 25.3;
+                this.hp = 1;
+                this.color = '#25d366'; // WhatsApp green
+                this.scoreValue = 150;
+                this.speed = 0.55;
+                const waAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(waAngle) * this.speed;
+                this.vy = Math.sin(waAngle) * this.speed;
+                break;
             case 'tshirt':
                 this.radius = 22;
                 this.hp = 1;
@@ -843,6 +1004,26 @@ class Enemy {
                 const tsAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(tsAngle) * this.speed;
                 this.vy = Math.sin(tsAngle) * this.speed;
+                break;
+            case 'cannabis':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#2e7d32'; // cannabis green
+                this.scoreValue = 180;
+                this.speed = 0.6;
+                const canAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(canAngle) * this.speed;
+                this.vy = Math.sin(canAngle) * this.speed;
+                break;
+            case 'tie_dye':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#e040fb'; // tie-dye purple
+                this.scoreValue = 180;
+                this.speed = 0.6;
+                const tdAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tdAngle) * this.speed;
+                this.vy = Math.sin(tdAngle) * this.speed;
                 break;
             case 'reform_mercedes':
                 this.radius = 50;
@@ -866,16 +1047,7 @@ class Enemy {
                 this.vx = Math.cos(teethAngle) * this.speed;
                 this.vy = Math.sin(teethAngle) * this.speed;
                 break;
-            case 'prison_gate':
-                this.radius = 24.2;
-                this.speed = 0.5;
-                this.hp = 1;
-                this.color = '#78909c';
-                this.scoreValue = 150;
-                const pgAngle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(pgAngle) * this.speed;
-                this.vy = Math.sin(pgAngle) * this.speed;
-                break;
+
             case 'needle':
                 this.radius = 22.8;
                 this.speed = 0.6;
@@ -981,7 +1153,7 @@ class Enemy {
     update(deltaTime) {
         this.angle += 0.03;
 
-        const layoutWave = 2 + ((currentWave - 2) % 17);
+        const layoutWave = 1 + ((currentWave - 1) % 18);
 
         // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
         if (layoutWave === 10) {
@@ -1140,7 +1312,7 @@ class Enemy {
                 enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 4.5, 'enemy', 'dropping'));
             }
         }
-        else if (this.type === 'mandipeter') {
+        else if (this.type === 'mandipede') {
             if (this.segmentType === 'head') {
                 const dx = player.x - this.x;
                 const dy = player.y - this.y;
@@ -1156,7 +1328,7 @@ class Enemy {
                 this.soundTimer += deltaTime;
                 if (this.soundTimer > 2000 + Math.random() * 1500) {
                     this.soundTimer = 0;
-                    window.audio.playMandipeterWhine();
+                    window.audio.playMandipedeWhine();
                 }
 
                 // Shoot at player periodically
@@ -1260,17 +1432,6 @@ class Enemy {
             else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
             if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
-
-            this.fireTimer += deltaTime;
-            if (this.fireTimer > 2200) {
-                this.fireTimer = 0;
-                if (layoutWave === 10) {
-                    // Commons Debate: shoot straight right
-                    enemyBullets.push(new Bullet(this.x + 22, this.y, 4.0, 0, 'enemy'));
-                } else {
-                    this.shootAtPlayer();
-                }
-            }
         }
         else if (this.type === 'exploding_brain') {
             const dx = player.x - this.x;
@@ -1323,7 +1484,9 @@ class Enemy {
             }
         }
         else if (this.type === 'false_teeth') {
-            this.angle += 0.012; // slowly rotate the jaw structure
+            if (!this.swingTimer) this.swingTimer = 0;
+            this.swingTimer += 0.012;
+            this.angle = Math.sin(this.swingTimer) * 0.8; // slowly oscillate the jaw structure
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -1415,7 +1578,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'prison_gate', 'needle', 'grad_cap', 'padlocks'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'needle', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -1513,7 +1676,7 @@ class Enemy {
         }
         else if (this.type === 'newspaper') {
             ctx.save();
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.drawImage(newspaperImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -1567,7 +1730,7 @@ class Enemy {
         }
         else if (this.type === 'green') {
             ctx.save();
-            ctx.rotate(this.angle * 0.4);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.drawImage(greenLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -1579,16 +1742,16 @@ class Enemy {
             ctx.drawImage(libdemLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
-        else if (this.type === 'mandipeter') {
+        else if (this.type === 'mandipede') {
             if (this.segmentType === 'head') {
                 ctx.save();
                 const wobble = Math.sin(Date.now() / 200) * 0.05;
                 ctx.rotate(wobble);
-                ctx.drawImage(mandipeterFaceImg, -this.radius * 1.5, -this.radius * 1.5, this.radius * 3, this.radius * 3);
+                ctx.drawImage(mandipedeFaceImg, -this.radius * 1.5, -this.radius * 1.5, this.radius * 3, this.radius * 3);
                 ctx.restore();
             } else {
                 ctx.save();
-                ctx.rotate(this.angle * 0.1);
+                ctx.rotate(Math.sin(this.angle * 0.5) * 0.08);
                 
                 // Draw white Y-front briefs
                 ctx.fillStyle = '#ffffff';
@@ -1752,37 +1915,10 @@ class Enemy {
         else if (this.type === 'labour_enemy') {
             // Labour Square Block Logo (drift wobble)
             ctx.translate(Math.sin(this.bobOffset) * 20, 0);
-            ctx.fillStyle = '#e51c23'; // Labour red
-            ctx.beginPath();
-            ctx.roundRect(-this.radius, -this.radius, this.radius * 2, this.radius * 2, 5);
-            ctx.fill();
-
-            // Draw white rose silhouette in center
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(0, -2, this.radius * 0.45, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Stem
-            ctx.beginPath();
-            ctx.moveTo(-1, this.radius * 0.4);
-            ctx.quadraticCurveTo(-1, 0, -3, -2);
-            ctx.lineTo(-1, -2);
-            ctx.quadraticCurveTo(1, 0, 1, this.radius * 0.4);
-            ctx.fill();
-
-            // Leaf details
-            ctx.beginPath();
-            ctx.ellipse(-5, 4, 3, 1.5, Math.PI/4, 0, Math.PI*2);
-            ctx.ellipse(4, 5, 3, 1.5, -Math.PI/4, 0, Math.PI*2);
-            ctx.fill();
-
-            // Carve petals
-            ctx.strokeStyle = '#e51c23';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.arc(0, -2, this.radius * 0.22, 0, Math.PI, true);
-            ctx.stroke();
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 0.5) * 0.08); // slow sway matching other party logos like tory
+            ctx.drawImage(labourLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
         }
         else if (this.type === 'exploding_brain' || this.type === 'mini_brain') {
             // Apply visual vibration for psycho energy
@@ -1817,7 +1953,7 @@ class Enemy {
         }
         else if (this.type === 'tree_trunk') {
             ctx.save();
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
 
             // Main branch (diagonal thick brown line)
             ctx.strokeStyle = '#8d6e63'; // branch brown
@@ -1983,7 +2119,7 @@ class Enemy {
         }
         else if (this.type === 'cigarette') {
             ctx.save();
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.drawImage(cigarettesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -1993,7 +2129,7 @@ class Enemy {
             const scale = this.radius / originalRadius;
             ctx.scale(scale, scale);
             // Green glass bottle of booze
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.fillStyle = '#2e7d32'; // Green bottle glass
             ctx.strokeStyle = '#1b5e20';
             ctx.lineWidth = 1.5;
@@ -2088,7 +2224,7 @@ class Enemy {
         }
         else if (this.type === 'brighton_rock') {
             // Striped Brighton Rock stick
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             
             // Stick body
             ctx.fillStyle = '#ffffff';
@@ -2108,13 +2244,13 @@ class Enemy {
         }
         else if (this.type === 'bikini') {
             ctx.save();
-            ctx.rotate(this.angle * 0.4);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.drawImage(handcuffsImg, -this.radius * 1.15, -this.radius * 1.05, this.radius * 2.3, this.radius * 2.1);
             ctx.restore();
         }
         else if (this.type === 'banknote') {
             ctx.save();
-            ctx.rotate(this.angle);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             ctx.drawImage(banknotesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -2158,7 +2294,7 @@ class Enemy {
         else if (this.type === 'vape') {
             ctx.save();
             ctx.scale(1.1, 1.1);
-            ctx.rotate(this.angle * 0.2);
+            ctx.rotate(Math.sin(this.angle) * 0.15);
 
             // Mouthpiece (black, offset to the left)
             ctx.fillStyle = '#111111';
@@ -2198,7 +2334,7 @@ class Enemy {
         }
         else if (this.type === 'breakfast') {
             ctx.save();
-            ctx.rotate(this.angle * 0.15); // slow rotate
+            ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
             ctx.drawImage(breakfastImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -2342,50 +2478,10 @@ class Enemy {
             ctx.fill();
             ctx.restore();
         }
-        else if (this.type === 'prison_gate') {
-            ctx.save();
-            ctx.rotate(this.angle * 0.1); // slow rotate/wobble for movement feel
-            // Grey gate background (semi-transparent)
-            ctx.fillStyle = 'rgba(38, 50, 56, 0.4)';
-            ctx.strokeStyle = '#90a4ae'; // light grey frame
-            ctx.lineWidth = 3.0;
-            
-            // Draw gate frame (rounded rectangle)
-            ctx.beginPath();
-            ctx.roundRect(-this.radius * 0.9, -this.radius * 0.9, this.radius * 1.8, this.radius * 1.8, 4);
-            ctx.fill();
-            ctx.stroke();
 
-            // Vertical iron bars
-            ctx.strokeStyle = '#546e7a'; // dark steel bars
-            ctx.lineWidth = 2.0;
-            const barSpacing = this.radius * 0.4;
-            ctx.beginPath();
-            for (let dx = -this.radius * 0.6; dx <= this.radius * 0.6; dx += barSpacing) {
-                ctx.moveTo(dx, -this.radius * 0.9);
-                ctx.lineTo(dx, this.radius * 0.9);
-            }
-            ctx.stroke();
-
-            // Horizontal cross bars
-            ctx.strokeStyle = '#37474f';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.moveTo(-this.radius * 0.9, -this.radius * 0.4);
-            ctx.lineTo(this.radius * 0.9, -this.radius * 0.4);
-            ctx.moveTo(-this.radius * 0.9, this.radius * 0.4);
-            ctx.lineTo(this.radius * 0.9, this.radius * 0.4);
-            ctx.stroke();
-
-            // Central latch detail
-            ctx.fillStyle = '#ffd700'; // gold padlock lock shape
-            ctx.fillRect(-3, -3, 6, 6);
-
-            ctx.restore();
-        }
         else if (this.type === 'needle') {
             ctx.save();
-            ctx.rotate(this.angle * 0.4); // slow spin
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15); // slow oscillate
             ctx.drawImage(bloodBagImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
@@ -2393,6 +2489,126 @@ class Enemy {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.1); // subtle sway
             ctx.drawImage(diplomaImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'lettuce') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(lettuceImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'mop_head') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(mopHeadImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'pig') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(pigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'tabloid') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(tabloidImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'english_flag') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 0.5) * 0.12); // gentle sway
+            
+            const w = this.radius * 2;
+            const h = this.radius * 2;
+            const sliceCount = 20;
+            const sliceWidth = w / sliceCount;
+            const time = Date.now() * 0.005; // wave movement speed
+            
+            for (let i = 0; i < sliceCount; i++) {
+                const sx = (i / sliceCount) * englishFlagImg.width;
+                const sw = englishFlagImg.width / sliceCount;
+                const sy = 0;
+                const sh = englishFlagImg.height;
+                
+                const dx = -this.radius + i * sliceWidth;
+                const dy = -this.radius + Math.sin(i * 0.4 - time) * 3.5;
+                
+                ctx.drawImage(
+                    englishFlagImg, 
+                    sx, sy, sw, sh, 
+                    dx, dy, sliceWidth, h
+                );
+            }
+            ctx.restore();
+        }
+        else if (this.type === 'whatsapp') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(whatsappImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'cannabis') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
+            if (cannabisImg.complete && cannabisImg.naturalWidth !== 0) {
+                ctx.drawImage(cannabisImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            } else {
+                ctx.fillStyle = '#2e7d32';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+        else if (this.type === 'tie_dye') {
+            ctx.save();
+            if (tieDyeImg.complete && tieDyeImg.naturalWidth !== 0) {
+                ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
+                ctx.drawImage(tieDyeImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            } else {
+                // Draw vector fallback (tie-dye tshirt)
+                ctx.scale(1.1, 1.1);
+                ctx.rotate(Math.sin(this.angle) * 0.12);
+
+                ctx.fillStyle = '#e040fb';
+                ctx.strokeStyle = '#aa00ff';
+                ctx.lineWidth = 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(-10, -18);
+                ctx.lineTo(-20, -12);
+                ctx.lineTo(-15, -4);
+                ctx.lineTo(-10, -6);
+                ctx.lineTo(-10, 18);
+                ctx.lineTo(10, 18);
+                ctx.lineTo(10, -6);
+                ctx.lineTo(15, -4);
+                ctx.lineTo(20, -12);
+                ctx.lineTo(10, -18);
+                ctx.quadraticCurveTo(0, -14, -10, -18);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.save();
+                ctx.clip();
+                const colors = ['#ff1744', '#ffea00', '#00e676', '#00b0ff', '#ff3d00'];
+                for (let r = 5; r < 35; r += 6) {
+                    ctx.strokeStyle = colors[Math.floor(r / 6) % colors.length];
+                    ctx.lineWidth = 3.5;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                
+                ctx.strokeStyle = '#aa00ff';
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.arc(0, -18, 10, 0.25 * Math.PI, 0.75 * Math.PI);
+                ctx.stroke();
+            }
             ctx.restore();
         }
         else if (this.type === 'padlocks') {
@@ -2497,7 +2713,7 @@ class Collectible {
     constructor(x, y, type) {
         this.x = x;
         this.y = y;
-        this.type = type; // 'xvote' or 'rose'
+        this.type = type; // 'xvote', 'rose', 'bomb', 'three_way', or 'bouncy_shots'
         this.radius = 20; 
         this.bobOffset = Math.random() * Math.PI * 2;
         this.pulseSize = 0;
@@ -2577,73 +2793,139 @@ class Collectible {
             ctx.quadraticCurveTo(1, -1, -11, 9);
             ctx.stroke();
             ctx.restore();
-        } else {
-            // Labour party rose logo (red square background, white rose silhouette with leaves)
-            ctx.fillStyle = '#e51c23'; // Labour red
-            ctx.beginPath();
-            ctx.roundRect(-16, -16, 32, 32, 6); // rounded square of 32x32
-            ctx.fill();
-            
-            // Draw white stem
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.moveTo(-1, 16);
-            ctx.quadraticCurveTo(-1, 8, -4, 3);
-            ctx.lineTo(-2, 3);
-            ctx.quadraticCurveTo(1, 8, 1, 16);
-            ctx.fill();
-            
-            // Draw white leaves
-            ctx.beginPath();
-            ctx.ellipse(-8, 8, 5, 2.5, Math.PI / 6, 0, Math.PI * 2);
-            ctx.ellipse(7, 10, 5, 2.5, -Math.PI / 6, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Draw main white circle for flower petals
-            ctx.beginPath();
-            ctx.arc(0, -3, 8.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Carve out petals details with Labour Red lines
-            ctx.strokeStyle = '#e51c23';
-            ctx.lineWidth = 1.6;
+        } else if (this.type === 'rose') {
+            // Draw detailed rose image asset
+            ctx.drawImage(bonusRoseImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+        } else if (this.type === 'bomb') {
+            // Draw a round black cartoon bomb with a fuse
+            ctx.save();
+            // 1. Fuse (curved line)
+            ctx.strokeStyle = '#d7ccc8'; // Light brown/grey fuse
+            ctx.lineWidth = 3;
             ctx.lineCap = 'round';
-            // Center spiral/cup
             ctx.beginPath();
-            ctx.arc(0, -3, 5, -Math.PI * 0.8, Math.PI * 0.8);
+            ctx.moveTo(0, -12);
+            ctx.quadraticCurveTo(8, -20, 12, -22);
             ctx.stroke();
 
+            // Fuse spark (orange/yellow star/sparkle)
+            ctx.fillStyle = '#ffb300'; // Amber/orange spark
             ctx.beginPath();
-            ctx.arc(0, -3, 2, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Petal divisions
-            ctx.beginPath();
-            ctx.moveTo(-5, -6);
-            ctx.lineTo(-2.5, -3);
-            ctx.moveTo(5, -6);
-            ctx.lineTo(2.5, -3);
-            ctx.moveTo(-2, 2);
-            ctx.quadraticCurveTo(-5, 0, -6, -2);
-            ctx.moveTo(2, 2);
-            ctx.quadraticCurveTo(5, 0, 6, -2);
-            ctx.stroke();
-
-            // Outer white leaf/petals at the top left/right
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.ellipse(-7, -7, 4, 2.5, -Math.PI / 4, 0, Math.PI * 2);
-            ctx.ellipse(7, -7, 4, 2.5, Math.PI / 4, 0, Math.PI * 2);
+            ctx.arc(12, -22, 3 + Math.sin(Date.now() / 80) * 1.5, 0, Math.PI * 2);
             ctx.fill();
 
-            // Draw line separations on top petals
-            ctx.strokeStyle = '#e51c23';
+            // 2. Bomb body (black circle)
+            ctx.fillStyle = '#111111'; // Off-black
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
             ctx.beginPath();
-            ctx.moveTo(-5, -5);
-            ctx.lineTo(-8, -8);
-            ctx.moveTo(5, -5);
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Highlight (white/grey reflection dot)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(-5, -5, 2.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 3. Brass collar/cap on top of bomb
+            ctx.fillStyle = '#8d6e63'; // brass brown
+            ctx.fillRect(-4, -15, 8, 3);
+            
+            ctx.restore();
+        } else if (this.type === 'three_way') {
+            // Three-way firing icon (The Triple Lock sprite!)
+            ctx.save();
+            
+            // Draw a circular background or icon frame
+            ctx.fillStyle = 'rgba(0, 229, 255, 0.2)'; // transparent cyan
+            ctx.strokeStyle = '#00e5ff'; // neon cyan border
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Draw three overlapping locked padlocks (The Triple Lock)
+            ctx.scale(0.8, 0.8); // Scale down slightly to fit the collectible radius
+            
+            const drawSinglePadlock = (tx, ty, scale = 1.0) => {
+                ctx.save();
+                ctx.translate(tx, ty);
+                ctx.scale(scale, scale);
+
+                // Shackle (silver loop)
+                ctx.strokeStyle = '#cfd8dc'; // metallic silver
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.arc(0, -3, 6, Math.PI, 0); // shackle arc
+                ctx.moveTo(-6, -3); ctx.lineTo(-6, 3);
+                ctx.moveTo(6, -3); ctx.lineTo(6, 3);
+                ctx.stroke();
+
+                // Body (gold rectangular box)
+                ctx.fillStyle = '#ffd54f'; // golden yellow
+                ctx.strokeStyle = '#ffb300'; // dark gold border
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.roundRect(-10, 0, 20, 14, 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // Keyhole
+                ctx.fillStyle = '#212121';
+                ctx.beginPath();
+                ctx.arc(0, 5, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillRect(-0.8, 6.5, 1.6, 4);
+
+                ctx.restore();
+            };
+
+            drawSinglePadlock(-6, 3, 0.75);
+            drawSinglePadlock(6, 3, 0.75);
+            drawSinglePadlock(0, -6, 0.75);
+
+            ctx.restore();
+        } else if (this.type === 'bouncy_shots') {
+            // Bouncy shots icon: light ray reflecting off a surface
+            ctx.save();
+            
+            // Icon background/frame: transparent yellow-orange
+            ctx.fillStyle = 'rgba(255, 204, 0, 0.2)'; // transparent yellow
+            ctx.strokeStyle = '#ffcc00'; // neon yellow border
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 14, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Reflected surface line (draw a small flat mirror line at the bottom)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-9, 5);
+            ctx.lineTo(9, 5);
+            ctx.stroke();
+
+            // Incident light ray (bright yellow ray entering from top-left to center-bottom, then exiting to top-right)
+            ctx.strokeStyle = '#ffeb3b'; // bright yellow ray
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            ctx.moveTo(-8, -8);
+            ctx.lineTo(0, 5);
             ctx.lineTo(8, -8);
             ctx.stroke();
+
+            // Small sparkle/reflection point glow
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 5, 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.restore();
         }
 
         ctx.restore();
@@ -2704,9 +2986,14 @@ function startGame() {
 
     score = 0;
     lives = 10; // Start with 10 lives
-    currentWave = 2;
+    currentWave = 1;
+    waveTransitionTimer = 0;
+    waveCompleteDelayTimer = 0;
+    waveStartDelayTimer = 0;
+    timeSinceLastKill = 0;
+    bombSpawnCooldownTimer = 0;
     hudScore.textContent = '000000';
-    hudWave.textContent = '2';
+    hudWave.textContent = '1';
     updateLivesUI();
 
     bullets = [];
@@ -2722,13 +3009,15 @@ function startGame() {
 
     spawnWave();
     
-    showNotification("TORY WAVE", 220);
+    showNotification("TORY COLLAPSE", 220);
+
 }
 
 function spawnWave() {
     enemies = [];
     bullets = [];
     enemyBullets = [];
+    timeSinceLastKill = 0;
 
     const px = player ? player.x : ARENA_WIDTH / 2;
     const py = player ? player.y : ARENA_HEIGHT / 2;
@@ -2745,38 +3034,68 @@ function spawnWave() {
         enemies.push(new Enemy(ex, ey, type));
     };
 
-    const layoutWave = 2 + ((currentWave - 2) % 17);
+    const layoutWave = 1 + ((currentWave - 1) % 18);
 
     // Design waves according to user requirements
-    if (layoutWave === 2) {
-        // Wave 2 - "Tory Wave" - Tory trees + banknotes, sleaze buckets, bikinis + Kemi Badenoch mini boss
-        for (let i = 0; i < 8; i++) spawnEnemy('tory');
-        for (let i = 0; i < 4; i++) spawnEnemy('banknote');
-        for (let i = 0; i < 3; i++) spawnEnemy('ooze_bucket');
-        for (let i = 0; i < 3; i++) spawnEnemy('bikini');
+    if (layoutWave === 1) {
+        // Wave 1 - "Tory Collapse" - Tory trees + banknotes + newspapers + lettuce + mop heads + pigs + tabloids + Kemi Badenoch mini boss
+        for (let i = 0; i < 6; i++) spawnEnemy('tory');
+        for (let i = 0; i < 3; i++) spawnEnemy('banknote');
         for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
+
+        for (let i = 0; i < 2; i++) spawnEnemy('lettuce');
+        for (let i = 0; i < 2; i++) spawnEnemy('mop_head');
+        for (let i = 0; i < 2; i++) spawnEnemy('pig');
+        for (let i = 0; i < 2; i++) spawnEnemy('tabloid');
         spawnEnemy('kemi_miniboss');
     }
-    else if (layoutWave === 3) {
-        // Wave 3 - "Reform Invasion" - Reform arrow + cigarettes, booze, vapes, breakfast + Nigel Farage mini boss
-        for (let i = 0; i < 8; i++) spawnEnemy('reform');
-        for (let i = 0; i < 4; i++) spawnEnemy('cigarette');
-        for (let i = 0; i < 4; i++) spawnEnemy('booze_enemy');
-        for (let i = 0; i < 2; i++) spawnEnemy('vape');
+    else if (layoutWave === 2) {
+        // Wave 2 - "Reform Booze Up" - Reform arrows + cigarettes + breakfast + booze bottles + vapes + tabloid + banknotes + English flags + Nigel Farage mini boss
+        for (let i = 0; i < 6; i++) spawnEnemy('reform');
+        for (let i = 0; i < 3; i++) spawnEnemy('cigarette');
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
-        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
+        for (let i = 0; i < 3; i++) spawnEnemy('booze_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('vape');
+        for (let i = 0; i < 2; i++) spawnEnemy('tabloid');
+        for (let i = 0; i < 3; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 3; i++) spawnEnemy('english_flag');
         spawnEnemy('farage_miniboss');
     }
+    else if (layoutWave === 3) {
+        // Wave 3 - Boss level - Mandipede centipede + banknotes + tabloids + English flags + Labour logos + breakfast + diplomas + whatsapp
+        let lastSegment = null;
+        for (let i = 0; i < 10; i++) {
+            const sx = 150 - i * 25;
+            const sy = 120;
+            const segment = new Enemy(sx, sy, 'mandipede');
+            
+            if (i === 0) {
+                segment.segmentType = 'head';
+                segment.vx = 2.2;
+                segment.directionY = 1;
+                segment.hp = 20; // Head starts with 20 HP
+            } else {
+                segment.segmentType = 'body';
+                segment.leader = lastSegment;
+            }
+            enemies.push(segment);
+            lastSegment = segment;
+        }
+        for (let i = 0; i < 3; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 2; i++) spawnEnemy('tabloid');
+        for (let i = 0; i < 2; i++) spawnEnemy('english_flag');
+        for (let i = 0; i < 2; i++) spawnEnemy('labour_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
+        for (let i = 0; i < 2; i++) spawnEnemy('grad_cap'); // diploma
+        for (let i = 0; i < 3; i++) spawnEnemy('whatsapp'); // new WhatsApp enemy
+    }
     else if (layoutWave === 4) {
-        // Wave 4 - "Green Unpleasant Land" - Green logo + tree logs, tie-dye T-shirts, grey cats + Zack mini boss
+        // Wave 4 - "Green Unpleasant Land" - Green logo + tree branches, newspapers, tree trunks, cannabis, tie_dye + Zack mini boss
         for (let i = 0; i < 6; i++) spawnEnemy('green');
-        for (let i = 0; i < 4; i++) spawnEnemy('tree_trunk');
-        for (let i = 0; i < 3; i++) spawnEnemy('tshirt');
-        for (let i = 0; i < 3; i++) spawnEnemy('cat_enemy');
-        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
+        for (let i = 0; i < 3; i++) spawnEnemy('tree_trunk');
+        for (let i = 0; i < 3; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 3; i++) spawnEnemy('cannabis');
+        for (let i = 0; i < 3; i++) spawnEnemy('tie_dye');
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 5) {
@@ -2796,12 +3115,12 @@ function spawnWave() {
         spawnEnemy('ed_miniboss');
     }
     else if (layoutWave === 6) {
-        // Wave 6 - Boss level - Mandipeter centipede
+        // Wave 6 - Boss level - Mandipede centipede
         let lastSegment = null;
         for (let i = 0; i < 10; i++) {
             const sx = 150 - i * 25;
             const sy = 120;
-            const segment = new Enemy(sx, sy, 'mandipeter');
+            const segment = new Enemy(sx, sy, 'mandipede');
             
             if (i === 0) {
                 segment.segmentType = 'head';
@@ -2856,7 +3175,25 @@ function spawnWave() {
             player.y = ARENA_HEIGHT / 2;
         }
 
-        const yPositions = [100, 170, 240, 310, 380, 450, 520, 590, 660];
+        const numRows = 9;
+        const baseSpacing = 70;
+        const maxGridHeight = (numRows - 1) * baseSpacing;
+        const topPadding = ARENA_CEILING + 65;
+        const bottomPadding = 75;
+        const availableHeight = ARENA_HEIGHT - topPadding - bottomPadding;
+        
+        let spacing = baseSpacing;
+        if (maxGridHeight > availableHeight) {
+            spacing = availableHeight / (numRows - 1);
+        }
+        
+        const gridHeight = (numRows - 1) * spacing;
+        const startY = topPadding + (availableHeight - gridHeight) / 2;
+        
+        const yPositions = [];
+        for (let i = 0; i < numRows; i++) {
+            yPositions.push(startY + i * spacing);
+        }
 
         // Left Side (Labour): 3 Columns
         // Front Row (x = 210) - Shields
@@ -2901,11 +3238,12 @@ function spawnWave() {
         spawnEnemy('kemi_miniboss');
     }
     else if (layoutWave === 12) {
-        // Wave 12 - Greens wave "Climate Catastrophe" - Green logo + tree logs, tie-dye T-shirts, grey cats + Zack mini bosses
+        // Wave 12 - Greens wave "Climate Catastrophe" - Green logo + tree branches, newspapers, tree trunks, cannabis, tie_dye + Zack mini bosses
         for (let i = 0; i < 6; i++) spawnEnemy('green');
-        for (let i = 0; i < 6; i++) spawnEnemy('tree_trunk');
-        for (let i = 0; i < 6; i++) spawnEnemy('tshirt');
-        for (let i = 0; i < 6; i++) spawnEnemy('cat_enemy');
+        for (let i = 0; i < 4; i++) spawnEnemy('tree_trunk');
+        for (let i = 0; i < 4; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 4; i++) spawnEnemy('cannabis');
+        for (let i = 0; i < 4; i++) spawnEnemy('tie_dye');
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 13) {
@@ -2966,8 +3304,9 @@ function spawnWave() {
 
         for (let i = 0; i < 4; i++) spawnEnemy('green');
         for (let i = 0; i < 2; i++) spawnEnemy('tree_trunk');
-        for (let i = 0; i < 2; i++) spawnEnemy('tshirt');
-        for (let i = 0; i < 2; i++) spawnEnemy('cat_enemy');
+        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 2; i++) spawnEnemy('cannabis');
+        for (let i = 0; i < 2; i++) spawnEnemy('tie_dye');
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 18) {
@@ -3009,7 +3348,7 @@ function spawnWave() {
     }
     // Scatter scandal enemies in every wave
     const numScandalEnemies = 4 + Math.floor(currentWave / 4);
-    const scandalTypes = ['prison_gate', 'needle', 'grad_cap', 'padlocks'];
+    const scandalTypes = ['needle', 'grad_cap'];
     for (let i = 0; i < numScandalEnemies; i++) {
         const randomType = scandalTypes[Math.floor(Math.random() * scandalTypes.length)];
         spawnEnemy(randomType);
@@ -3022,10 +3361,22 @@ function spawnWave() {
     }
 }
 
-function spawnCollectible() {
+function spawnCollectible(forcedType) {
     const cx = Math.random() * (ARENA_WIDTH - 80) + 40;
     const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
-    const type = Math.random() > 0.4 ? 'xvote' : 'rose';
+    let type = forcedType;
+    if (!type) {
+        const rand = Math.random();
+        if (rand < 0.4) {
+            type = 'xvote';
+        } else if (rand < 0.8) {
+            type = 'rose';
+        } else if (rand < 0.9) {
+            type = 'three_way';
+        } else {
+            type = 'bouncy_shots';
+        }
+    }
     collectibles.push(new Collectible(cx, cy, type));
 }
 
@@ -3073,6 +3424,7 @@ function playerDeath() {
 
     lives--;
     updateLivesUI();
+    timeSinceLastKill = 0;
     triggerScreenShake(15, 600);
     window.audio.playPlayerDeath();
 
@@ -3157,9 +3509,12 @@ function gameLoop(timestamp) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     ctx.save();
-    const scaleX = canvas.width / ARENA_WIDTH;
-    const scaleY = canvas.height / ARENA_HEIGHT;
-    ctx.scale(scaleX, scaleY);
+    // Calculate aspect-locked uniform scale and centering offsets
+    const scale = Math.min(canvas.width / ARENA_WIDTH, canvas.height / ARENA_HEIGHT);
+    const offsetX = (canvas.width - ARENA_WIDTH * scale) / 2;
+    const offsetY = (canvas.height - ARENA_HEIGHT * scale) / 2;
+    ctx.translate(offsetX, offsetY);
+    ctx.scale(scale, scale);
 
     if (shakeTime > 0) {
         const dx = (Math.random() * 2 - 1) * shakeIntensity;
@@ -3170,6 +3525,9 @@ function gameLoop(timestamp) {
 
     drawArenaBoundary();
     drawGame();
+    if (waveTransitionTimer > 0) {
+        drawUnionJackTransition(waveTransitionTimer);
+    }
     drawCanvasHUD();
 
     ctx.restore();
@@ -3200,35 +3558,83 @@ function updateGame(deltaTime) {
         spawnCollectible();
     }
 
+    if (gameState === 'PLAYING') {
+        if (enemies.length > 0) {
+            timeSinceLastKill += fixedTimeStep;
+        } else {
+            timeSinceLastKill = 0;
+        }
+
+        if (bombSpawnCooldownTimer > 0) {
+            bombSpawnCooldownTimer -= fixedTimeStep;
+        }
+
+        const hasBomb = collectibles.some(c => c.type === 'bomb');
+        if (timeSinceLastKill >= 10000 && !hasBomb && bombSpawnCooldownTimer <= 0) {
+            spawnCollectible('bomb');
+            timeSinceLastKill = 0;
+            bombSpawnCooldownTimer = 30000; // 30 seconds cooldown
+        }
+    }
+
     checkCollisions();
 
-    if (enemies.length === 0 && waveTransitionTimer === 0) {
-        waveTransitionTimer = 150;
-        const isInvincible = player && player.isInvincibleCheat;
-        if (!isInvincible) {
-            showNotification("WAVE COMPLETE! EXTRA LIFE!");
-            lives++;
-            updateLivesUI();
-        } else {
-            showNotification("WAVE COMPLETE!");
+    // End of wave transition triggering logic with 500ms delay
+    if (enemies.length === 0 && waveTransitionTimer === 0 && waveCompleteDelayTimer === 0 && waveStartDelayTimer === 0) {
+        waveCompleteDelayTimer = 500;
+    }
+
+    if (waveCompleteDelayTimer > 0) {
+        waveCompleteDelayTimer -= deltaTime;
+        if (waveCompleteDelayTimer <= 0) {
+            waveCompleteDelayTimer = 0;
+            waveTransitionTimer = 75;
+            
+            // Clear remaining items and projectiles from arena
+            collectibles = [];
+            bullets = [];
+            enemyBullets = [];
+            
+            // Play retro transition echoing sound effect
+            if (window.audio) {
+                window.audio.playTransitionSound();
+            }
+
+            const isInvincible = player && player.isInvincibleCheat;
+            if (!isInvincible) {
+                showNotification("WAVE COMPLETE! EXTRA LIFE!");
+                lives++;
+                updateLivesUI();
+            } else {
+                showNotification("WAVE COMPLETE!");
+            }
+            triggerScreenShake(5, 400);
         }
-        triggerScreenShake(5, 400);
     }
 
     if (waveTransitionTimer > 0) {
         waveTransitionTimer--;
         if (waveTransitionTimer === 0) {
+            waveStartDelayTimer = 500;
+        }
+    }
+
+    if (waveStartDelayTimer > 0) {
+        waveStartDelayTimer -= deltaTime;
+        if (waveStartDelayTimer <= 0) {
+            waveStartDelayTimer = 0;
             currentWave++;
             hudWave.textContent = currentWave;
             spawnWave();
             
-            const layoutWave = 2 + ((currentWave - 2) % 17);
+            const layoutWave = 1 + ((currentWave - 1) % 18);
             let waveMsg = "";
-            if (layoutWave === 2) waveMsg = "TORY WAVE";
-            else if (layoutWave === 3) waveMsg = "REFORM INVASION";
+            if (layoutWave === 1) waveMsg = "TORY COLLAPSE";
+            else if (layoutWave === 2) waveMsg = "REFORM BOOZE UP";
+            else if (layoutWave === 3) waveMsg = "BOSS - THE MANDIPEDE";
             else if (layoutWave === 4) waveMsg = "GREEN UNPLEASANT LAND";
             else if (layoutWave === 5) waveMsg = "LIBERAL DEMOCRAPS";
-            else if (layoutWave === 6) waveMsg = "BOSS - THE MANDIPETER";
+            else if (layoutWave === 6) waveMsg = "BOSS - THE MANDIPEDE";
             else if (layoutWave === 7) waveMsg = "SEWAGE CRISIS";
             else if (layoutWave === 8) waveMsg = "THE LORDS ARE REVOLTING";
             else if (layoutWave === 9) waveMsg = "DAVEY BUNGEE";
@@ -3253,16 +3659,94 @@ function collectItem(cIndex) {
     
     collectibles.splice(cIndex, 1);
     
-    // Rose is worth 1000, X marker is worth 500
-    const points = col.type === 'rose' ? 1000 : 500;
-    score += points;
-    hudScore.textContent = String(score).padStart(6, '0');
-    
     window.audio.playCollect();
-    
-    if (player) {
-        player.bonusInvincibilityTimer = 3000;
-        showNotification("INVINCIBLE! +3s");
+    timeSinceLastKill = 0; // Reset countdown on any item collection
+
+    if (col.type === 'bomb') {
+        score += 250;
+        hudScore.textContent = String(score).padStart(6, '0');
+        showNotification("SCREEN BOMB TRIGGERED!");
+        timeSinceLastKill = 0;
+
+        // Inflict 1 damage to every active enemy
+        for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+            const enemy = enemies[eIndex];
+            
+            // Mandipede head invulnerability handling
+            if (enemy.type === 'mandipede' && enemy.segmentType === 'head') {
+                const hasBody = enemies.some(e => e.type === 'mandipede' && e.segmentType === 'body');
+                if (hasBody) {
+                    for (let i = 0; i < 4; i++) {
+                        particles.push(new Particle(enemy.x, enemy.y, '#00e5ff'));
+                    }
+                    continue;
+                }
+            }
+
+            enemy.hp--;
+            for (let i = 0; i < 3; i++) {
+                particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+            }
+
+            if (enemy.hp <= 0) {
+                if (enemy.type === 'mandipede') {
+                    enemies.forEach(e => {
+                        if (e.type === 'mandipede' && e.leader === enemy) {
+                            e.leader = enemy.leader;
+                        }
+                    });
+                }
+                
+                if (enemy.type === 'exploding_brain') {
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    window.audio.playExplosion();
+                    triggerScreenShake(8, 250);
+                    
+                    const numMiniBrains = 6 + Math.floor(Math.random() * 3);
+                    for (let k = 0; k < numMiniBrains; k++) {
+                        const mb = new Enemy(enemy.x, enemy.y, 'mini_brain');
+                        mb.x += (Math.random() - 0.5) * 15;
+                        mb.y += (Math.random() - 0.5) * 15;
+                        enemies.push(mb);
+                    }
+                } else {
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    window.audio.playExplosion();
+                    triggerScreenShake(4, 150);
+                    
+                    const particleCount = enemy.type === 'bouncer' ? 25 : 12;
+                    for (let i = 0; i < particleCount; i++) {
+                        particles.push(new Particle(enemy.x, enemy.y, enemy.color));
+                    }
+                }
+            }
+        }
+    } else if (col.type === 'three_way') {
+        score += 500;
+        hudScore.textContent = String(score).padStart(6, '0');
+        showNotification("Triple Lock Guarantee");
+        if (player) {
+            player.threeWayTimer = 8000; // 8 seconds duration
+        }
+    } else if (col.type === 'bouncy_shots') {
+        score += 500;
+        hudScore.textContent = String(score).padStart(6, '0');
+        showNotification("BOUNCY SHOTS ACTIVE!");
+        if (player) {
+            player.bouncyShotsTimer = 10000; // 10 seconds duration
+        }
+    } else {
+        const points = col.type === 'rose' ? 1000 : 500;
+        score += points;
+        hudScore.textContent = String(score).padStart(6, '0');
+        if (player) {
+            player.bonusInvincibilityTimer = 3000;
+            showNotification("INVINCIBLE! +3s");
+        }
     }
     
     // Spawn gorgeous pulsing rainbow spark particles!
@@ -3284,8 +3768,8 @@ function checkCollisions() {
             
             if (dist < bullet.radius + enemy.radius) {
                 // Mandipede head invulnerability handling
-                if (enemy.type === 'mandipeter' && enemy.segmentType === 'head') {
-                    const hasBody = enemies.some(e => e.type === 'mandipeter' && e.segmentType === 'body');
+                if (enemy.type === 'mandipede' && enemy.segmentType === 'head') {
+                    const hasBody = enemies.some(e => e.type === 'mandipede' && e.segmentType === 'body');
                     if (hasBody) {
                         bullets.splice(bIndex, 1);
                         for (let i = 0; i < 4; i++) {
@@ -3303,10 +3787,11 @@ function checkCollisions() {
                 }
 
                 if (enemy.hp <= 0) {
-                    if (enemy.type === 'mandipeter') {
+                    timeSinceLastKill = 0;
+                    if (enemy.type === 'mandipede') {
                         // Relink body segment to prevent splitting
                         enemies.forEach(e => {
-                            if (e.type === 'mandipeter' && e.leader === enemy) {
+                            if (e.type === 'mandipede' && e.leader === enemy) {
                                 e.leader = enemy.leader;
                             }
                         });
@@ -3365,21 +3850,22 @@ function checkCollisions() {
              if (dist < player.radius + enemy.radius) {
                 // Enemy dies!
                 // Bosses are not killed by collision; Starmer loses life but boss remains
-                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(enemy.type) || (enemy.type === 'mandipeter' && enemy.segmentType === 'head');
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
                 if (isBoss) {
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
                     }
                 } else {
-                    if (enemy.type === 'mandipeter') {
+                    if (enemy.type === 'mandipede') {
                         // Relink segments before splicing
                         enemies.forEach(e => {
-                            if (e.type === 'mandipeter' && e.leader === enemy) {
+                            if (e.type === 'mandipede' && e.leader === enemy) {
                                 e.leader = enemy.leader;
                             }
                         });
                     }
                     enemies.splice(eIndex, 1);
+                    timeSinceLastKill = 0;
                     score += enemy.scoreValue;
                     hudScore.textContent = String(score).padStart(6, '0');
                     
@@ -3419,6 +3905,143 @@ function checkCollisions() {
 // ----------------------------------------------------
 // Rendering Functions
 // ----------------------------------------------------
+
+function drawUnionJackTransition(timer) {
+    let t = (75 - timer) / 75; // Total duration is 75 frames (half of 150)
+    
+    // Helper function for staggered segment progress
+    function getSegmentProgress(tVal, startOn, endOn, startOff, endOff) {
+        if (tVal < startOn) return 0;
+        if (tVal < endOn) return (tVal - startOn) / (endOn - startOn);
+        if (tVal < startOff) return 1;
+        if (tVal < endOff) return 1 - (tVal - startOff) / (endOff - startOff);
+        return 0;
+    }
+
+    // 1. Blue Background Quadrants (animate first)
+    let pBlue = getSegmentProgress(t, 0.0, 0.15, 0.65, 0.85);
+    if (pBlue > 0) {
+        const quadrants = [
+            { x: 0, y: 0, cx: ARENA_WIDTH / 4, cy: ARENA_HEIGHT / 4 },
+            { x: ARENA_WIDTH / 2, y: 0, cx: ARENA_WIDTH * 0.75, cy: ARENA_HEIGHT / 4 },
+            { x: 0, y: ARENA_HEIGHT / 2, cx: ARENA_WIDTH / 4, cy: ARENA_HEIGHT * 0.75 },
+            { x: ARENA_WIDTH / 2, y: ARENA_HEIGHT / 2, cx: ARENA_WIDTH * 0.75, cy: ARENA_HEIGHT * 0.75 }
+        ];
+        
+        quadrants.forEach((q) => {
+            ctx.save();
+            ctx.globalAlpha = pBlue;
+            ctx.translate(q.cx, q.cy);
+            ctx.scale(pBlue, pBlue);
+            ctx.translate(-q.cx, -q.cy);
+            ctx.fillStyle = '#00247D';
+            ctx.fillRect(q.x, q.y, ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+            ctx.restore();
+        });
+    }
+
+    // 2. White saltire (diagonals)
+    let pWhiteDiag = getSegmentProgress(t, 0.08, 0.23, 0.70, 0.90);
+    if (pWhiteDiag > 0) {
+        ctx.save();
+        ctx.globalAlpha = pWhiteDiag;
+        ctx.translate(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+        ctx.scale(pWhiteDiag, pWhiteDiag);
+        ctx.translate(-ARENA_WIDTH / 2, -ARENA_HEIGHT / 2);
+        
+        ctx.strokeStyle = '#FFFFFF';
+        ctx.lineWidth = ARENA_HEIGHT * 0.12;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ARENA_WIDTH, ARENA_HEIGHT);
+        ctx.moveTo(ARENA_WIDTH, 0);
+        ctx.lineTo(0, ARENA_HEIGHT);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    // 3. Red saltire (diagonals)
+    let pRedDiag = getSegmentProgress(t, 0.16, 0.31, 0.75, 0.95);
+    if (pRedDiag > 0) {
+        ctx.save();
+        ctx.globalAlpha = pRedDiag;
+        ctx.translate(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+        ctx.scale(pRedDiag, pRedDiag);
+        ctx.translate(-ARENA_WIDTH / 2, -ARENA_HEIGHT / 2);
+        
+        ctx.strokeStyle = '#CF142B';
+        ctx.lineWidth = ARENA_HEIGHT * 0.04;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(ARENA_WIDTH, ARENA_HEIGHT);
+        ctx.moveTo(ARENA_WIDTH, 0);
+        ctx.lineTo(0, ARENA_HEIGHT);
+        ctx.stroke();
+        
+        ctx.restore();
+    }
+
+    // 4. White St George Cross
+    let pWhiteCross = getSegmentProgress(t, 0.24, 0.39, 0.80, 1.0);
+    if (pWhiteCross > 0) {
+        ctx.save();
+        ctx.globalAlpha = pWhiteCross;
+        ctx.translate(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+        ctx.scale(pWhiteCross, pWhiteCross);
+        ctx.translate(-ARENA_WIDTH / 2, -ARENA_HEIGHT / 2);
+        
+        let whiteCrossWidth = ARENA_HEIGHT * 0.24;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, ARENA_HEIGHT / 2 - whiteCrossWidth / 2, ARENA_WIDTH, whiteCrossWidth);
+        ctx.fillRect(ARENA_WIDTH / 2 - whiteCrossWidth / 2, 0, whiteCrossWidth, ARENA_HEIGHT);
+        
+        ctx.restore();
+    }
+
+    // 5. Red St George Cross
+    let pRedCross = getSegmentProgress(t, 0.32, 0.47, 0.80, 1.0);
+    if (pRedCross > 0) {
+        ctx.save();
+        ctx.globalAlpha = pRedCross;
+        ctx.translate(ARENA_WIDTH / 2, ARENA_HEIGHT / 2);
+        ctx.scale(pRedCross, pRedCross);
+        ctx.translate(-ARENA_WIDTH / 2, -ARENA_HEIGHT / 2);
+        
+        let redCrossWidth = ARENA_HEIGHT * 0.145;
+        ctx.fillStyle = '#CF142B';
+        ctx.fillRect(0, ARENA_HEIGHT / 2 - redCrossWidth / 2, ARENA_WIDTH, redCrossWidth);
+        ctx.fillRect(ARENA_WIDTH / 2 - redCrossWidth / 2, 0, redCrossWidth, ARENA_HEIGHT);
+        
+        ctx.restore();
+    }
+
+    // 6. Gold border (based on overall alpha)
+    let overallAlpha = 0;
+    if (t < 0.15) {
+        overallAlpha = t / 0.15;
+    } else if (t > 0.85) {
+        overallAlpha = (1.0 - t) / 0.15;
+    } else {
+        overallAlpha = 1.0;
+    }
+    
+    if (overallAlpha > 0) {
+        ctx.save();
+        ctx.globalAlpha = overallAlpha;
+        ctx.strokeStyle = '#FFD700'; // Gold border
+        ctx.lineWidth = 15;
+        ctx.strokeRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+        ctx.restore();
+    }
+
+    // Flashing overlay in the middle of transition
+    if (t > 0.35 && t < 0.65) {
+        let flashOpacity = Math.sin(Date.now() / 30) * 0.18 + 0.18;
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashOpacity})`;
+        ctx.fillRect(0, 0, ARENA_WIDTH, ARENA_HEIGHT);
+    }
+}
 
 function drawArenaBoundary() {
     ctx.strokeStyle = 'rgba(255, 0, 127, 0.18)';
@@ -3485,7 +4108,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.4.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.8.0', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
@@ -3496,7 +4119,6 @@ function drawCanvasHUD() {
 const touchControls = document.getElementById('touch-controls');
 const joystickBoundary = document.getElementById('joystick-boundary');
 const joystickKnob = document.getElementById('joystick-knob');
-const btnTouchReverse = document.getElementById('btn-touch-reverse');
 const btnTouchStrafe = document.getElementById('btn-touch-strafe');
 
 function updateTouchControlsVisibility() {
@@ -3517,7 +4139,7 @@ if (isTouchDevice) {
     if (controlsGuide) {
         controlsGuide.innerHTML = `
             <div style="font-size: 0.85rem; line-height: 1.5; text-align: center; color: #b5b5c9;">
-                Use the joystick to <span class="text-cyan">MOVE</span> and the buttons to <span class="text-cyan">STRAFE</span> (locks firing angle) and <span class="text-pink">REVERSE</span> (fire backwards).
+                Use the joystick to <span class="text-cyan">MOVE</span> and the button to <span class="text-cyan">STRAFE</span> (locks firing angle).
             </div>
         `;
     }
@@ -3601,23 +4223,6 @@ function resetJoystick() {
 }
 
 // Action buttons touches
-btnTouchReverse.addEventListener('touchstart', (e) => {
-    e.preventDefault();
-    keys['r'] = true;
-    btnTouchReverse.classList.add('active');
-}, { passive: false });
-
-btnTouchReverse.addEventListener('touchend', (e) => {
-    e.preventDefault();
-    keys['r'] = false;
-    btnTouchReverse.classList.remove('active');
-}, { passive: false });
-
-btnTouchReverse.addEventListener('touchcancel', (e) => {
-    e.preventDefault();
-    keys['r'] = false;
-    btnTouchReverse.classList.remove('active');
-}, { passive: false });
 
 btnTouchStrafe.addEventListener('touchstart', (e) => {
     e.preventDefault();

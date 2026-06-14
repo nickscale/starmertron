@@ -359,8 +359,8 @@ class RetroAudioEngine {
         carrier.stop(time + 0.42);
     }
 
-    // 5. Mandipeter: Sinister snake-like hiss
-    playMandipeterHiss() {
+    // 5. Mandipede: Sinister snake-like hiss
+    playMandipedeHiss() {
         if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
         this.resumeContext();
         const time = this.ctx.currentTime;
@@ -385,8 +385,8 @@ class RetroAudioEngine {
         noiseNode.stop(time + 0.32);
     }
 
-    // playMandipeterWhine: High-pitched cartoon whining sound
-    playMandipeterWhine() {
+    // playMandipedeWhine: High-pitched cartoon whining sound
+    playMandipedeWhine() {
         if (!this.ctx || this.isMuted) return;
         this.resumeContext();
         const time = this.ctx.currentTime;
@@ -521,6 +521,81 @@ class RetroAudioEngine {
             this.musicInterval = null;
         }
         this.isPlayingMusic = false;
+    }
+
+    // Play wave transition sound with a spacey, echoing delay/reverb effect
+    playTransitionSound() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+
+        const time = this.ctx.currentTime;
+        
+        // Dual oscillators for a rich retro synth sound
+        const osc1 = this.ctx.createOscillator();
+        const osc2 = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const mainGain = this.ctx.createGain();
+        const delayNode = this.ctx.createDelay(1.5);
+        const feedbackGain = this.ctx.createGain();
+
+        // Sweeping frequencies: from 400Hz to 1200Hz
+        osc1.type = 'sawtooth';
+        osc1.frequency.setValueAtTime(400, time);
+        osc1.frequency.exponentialRampToValueAtTime(1200, time + 0.4);
+
+        osc2.type = 'square';
+        osc2.frequency.setValueAtTime(404, time); // detuned
+        osc2.frequency.exponentialRampToValueAtTime(1212, time + 0.4);
+
+        // Sweeping bandpass/lowpass filter for a retro chiptune spacey swoosh
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(900, time);
+        filter.frequency.exponentialRampToValueAtTime(3200, time + 0.35);
+        filter.Q.setValueAtTime(5, time);
+
+        // Amplitude envelope for the initial sweep
+        mainGain.gain.setValueAtTime(0.22, time);
+        mainGain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+
+        // Config feedback echo loop: 180ms delay time
+        delayNode.delayTime.setValueAtTime(0.18, time);
+        feedbackGain.gain.setValueAtTime(0.42, time);
+        // Ramp down feedback to zero to gracefully clear the loop and prevent resource leaks
+        feedbackGain.gain.linearRampToValueAtTime(0.0, time + 1.2);
+
+        // Node connections
+        osc1.connect(filter);
+        osc2.connect(filter);
+        filter.connect(mainGain);
+
+        // Dry signal
+        mainGain.connect(this.masterVolume);
+
+        // Wet signal (delay loop)
+        mainGain.connect(delayNode);
+        delayNode.connect(feedbackGain);
+        feedbackGain.connect(delayNode);
+        delayNode.connect(this.masterVolume);
+
+        // Start synth trigger
+        osc1.start(time);
+        osc2.start(time);
+        osc1.stop(time + 0.45);
+        osc2.stop(time + 0.45);
+
+        // Disconnect nodes to prevent any memory retention once sound decays
+        setTimeout(() => {
+            try {
+                osc1.disconnect();
+                osc2.disconnect();
+                filter.disconnect();
+                mainGain.disconnect();
+                delayNode.disconnect();
+                feedbackGain.disconnect();
+            } catch (e) {
+                // Keep robust against closed context errors
+            }
+        }, 1500);
     }
 }
 
