@@ -217,6 +217,21 @@ labourLogoImg.src = 'labour_party_logo_sprite.png';
 const bonusRoseImg = new Image();
 bonusRoseImg.src = 'bonus_rose.png';
 
+const candyflossImg = new Image();
+candyflossImg.src = 'candyfloss.png';
+
+const toffeeAppleImg = new Image();
+toffeeAppleImg.src = 'toffee_apple.png';
+
+const partyHatImg = new Image();
+partyHatImg.src = 'party_hat.png';
+
+const partyRingsImg = new Image();
+partyRingsImg.src = 'party_rings.png';
+
+const cakeImg = new Image();
+cakeImg.src = 'cake.png';
+
 
 
 
@@ -926,6 +941,36 @@ class Enemy {
                 this.vx = Math.cos(taAngle) * this.speed;
                 this.vy = Math.sin(taAngle) * this.speed;
                 break;
+            case 'party_hat':
+                this.radius = 28;
+                this.hp = 1;
+                this.color = '#ffa726';
+                this.scoreValue = 150;
+                this.speed = 0.5;
+                const phAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(phAngle) * this.speed;
+                this.vy = Math.sin(phAngle) * this.speed;
+                break;
+            case 'party_rings':
+                this.radius = 26;
+                this.hp = 1;
+                this.color = '#ec407a';
+                this.scoreValue = 180;
+                this.speed = 0.55;
+                const prAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(prAngle) * this.speed;
+                this.vy = Math.sin(prAngle) * this.speed;
+                break;
+            case 'cake':
+                this.radius = 25;
+                this.hp = 1;
+                this.color = '#ffd54f';
+                this.scoreValue = 200;
+                this.speed = 0.5;
+                const cakeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(cakeAngle) * this.speed;
+                this.vy = Math.sin(cakeAngle) * this.speed;
+                break;
             case 'brighton_rock':
                 this.radius = 20;
                 this.hp = 1;
@@ -1629,7 +1674,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'needle', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'needle', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -2210,67 +2255,32 @@ class Enemy {
         }
         else if (this.type === 'candy_floss') {
             ctx.save();
-            const originalRadius = 20;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // Fluffy pink candy floss on stick
-            ctx.rotate(Math.sin(this.angle * 2) * 0.08);
-            
-            // Wooden stick
-            ctx.strokeStyle = '#d7ccc8';
-            ctx.lineWidth = 3.5;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, originalRadius * 1.3);
-            ctx.stroke();
-
-            // Fluffy pink cotton candy cloud (overlapping arcs)
-            ctx.fillStyle = '#f48fb1'; // pink floss
-            ctx.beginPath();
-            ctx.arc(-8, -8, 11, 0, Math.PI * 2);
-            ctx.arc(8, -8, 11, 0, Math.PI * 2);
-            ctx.arc(0, 5, 11, 0, Math.PI * 2);
-            ctx.arc(-8, 3, 10, 0, Math.PI * 2);
-            ctx.arc(8, 3, 10, 0, Math.PI * 2);
-            ctx.arc(0, -14, 11, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // sugar highlights
-            ctx.fillStyle = '#ffc107';
-            ctx.beginPath();
-            ctx.arc(-3, -5, 2.2, 0, Math.PI * 2);
-            ctx.arc(4, 2, 1.8, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(candyflossImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'toffee_apple') {
             ctx.save();
-            const originalRadius = 18;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // Shiny red glazed apple on stick
-            ctx.rotate(Math.sin(this.angle * 2.5) * 0.06);
-
-            // Wooden stick
-            ctx.strokeStyle = '#d7ccc8';
-            ctx.lineWidth = 3.0;
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(0, -originalRadius * 1.2);
-            ctx.stroke();
-
-            // Apple body
-            ctx.fillStyle = '#d50000'; // candy glaze red
-            ctx.beginPath();
-            ctx.ellipse(0, 4, originalRadius * 0.9, originalRadius * 0.85, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Highlight shine
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.45)';
-            ctx.beginPath();
-            ctx.ellipse(-5, 0, 4, 2.2, Math.PI/4, 0, Math.PI*2);
-            ctx.fill();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(toffeeAppleImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'party_hat') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(partyHatImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'party_rings') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(partyRingsImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            ctx.restore();
+        }
+        else if (this.type === 'cake') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            ctx.drawImage(cakeImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
             ctx.restore();
         }
         else if (this.type === 'brighton_rock') {
@@ -3141,13 +3151,20 @@ function spawnWave() {
         for (let i = 0; i < 3; i++) spawnEnemy('whatsapp'); // new WhatsApp enemy
     }
     else if (layoutWave === 4) {
-        // Wave 4 - "Green Unpleasant Land" - Green logo + tree branches, newspapers, tree trunks, cannabis, tie_dye + Zack mini boss
-        for (let i = 0; i < 6; i++) spawnEnemy('green');
-        for (let i = 0; i < 3; i++) spawnEnemy('tree_trunk');
-        for (let i = 0; i < 3; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 3; i++) spawnEnemy('cannabis');
-        for (let i = 0; i < 3; i++) spawnEnemy('tie_dye');
-        spawnEnemy('zack_miniboss');
+        // Wave 4 - \"LIB DEMS POLITICAL PARTY TIME\" - Lib Dem bird, candy floss, toffee apples, party hats, party rings, cakes + Ed mini boss
+        for (let i = 0; i < 4; i++) {
+            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+            const by = 80 + Math.random() * 100;
+            const bird = new Enemy(bx, by, 'libdem');
+            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+            enemies.push(bird);
+        }
+        for (let i = 0; i < 5; i++) spawnEnemy('candy_floss');
+        for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
+        for (let i = 0; i < 3; i++) spawnEnemy('party_hat');
+        for (let i = 0; i < 3; i++) spawnEnemy('party_rings');
+        for (let i = 0; i < 3; i++) spawnEnemy('cake');
+        spawnEnemy('ed_miniboss');
     }
     else if (layoutWave === 5) {
         // Wave 5 - "Liberal Democraps" - Lib Dem bird + candy floss, toffee apples, Brighton rock + Ed mini boss
@@ -3683,7 +3700,7 @@ function updateGame(deltaTime) {
             if (layoutWave === 1) waveMsg = "TORY COLLAPSE";
             else if (layoutWave === 2) waveMsg = "REFORM BOOZE UP";
             else if (layoutWave === 3) waveMsg = "BOSS - THE MANDIPEDE";
-            else if (layoutWave === 4) waveMsg = "GREEN UNPLEASANT LAND";
+            else if (layoutWave === 4) waveMsg = "LIB DEMS POLITICAL PARTY TIME";
             else if (layoutWave === 5) waveMsg = "LIBERAL DEMOCRAPS";
             else if (layoutWave === 6) waveMsg = "BOSS - THE MANDIPEDE";
             else if (layoutWave === 7) waveMsg = "SEWAGE CRISIS";
@@ -4159,7 +4176,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.8.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.8.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
