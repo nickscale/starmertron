@@ -80,7 +80,7 @@ class RetroAudioEngine {
         // Rapid pitch sweep down
         osc.frequency.exponentialRampToValueAtTime(100, time + 0.15);
         
-        gain.gain.setValueAtTime(0.3, time);
+        gain.gain.setValueAtTime(0.24, time);
         gain.gain.linearRampToValueAtTime(0.01, time + 0.15);
         
         osc.connect(gain);

@@ -6,7 +6,58 @@ let ARENA_CEILING = 0;
 // Game State Variables
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
 let score = 0;
-let hiScore = localStorage.getItem('starmertron_hiscore') || 50000;
+
+// Session cookie helpers for High Score
+function getHighScoreCookie() {
+    const name = "starmertron_hiscore=";
+    const decodedCookie = decodeURIComponent(document.cookie);
+    const ca = decodedCookie.split(';');
+    for (let i = 0; i < ca.length; i++) {
+        let c = ca[i];
+        while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+        }
+        if (c.indexOf(name) === 0) {
+            return parseInt(c.substring(name.length, c.length), 10) || 0;
+        }
+    }
+    return 0;
+}
+
+function setHighScoreCookie(scoreVal) {
+    document.cookie = "starmertron_hiscore=" + scoreVal + "; path=/; SameSite=Strict";
+}
+
+function clearHighScoreCookie() {
+    document.cookie = "starmertron_hiscore=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Strict";
+}
+
+function isHardReload() {
+    try {
+        const navs = performance.getEntriesByType("navigation");
+        if (navs.length > 0 && navs[0].type === "reload") {
+            const resources = performance.getEntriesByType("resource");
+            const relevant = resources.filter(r => r.name.includes("game.js") || r.name.includes("style.css") || r.name.includes("audio.js"));
+            if (relevant.length > 0) {
+                return relevant.some(r => r.transferSize > 0);
+            }
+        }
+    } catch (e) {
+        console.error(e);
+    }
+    return false;
+}
+
+// Clear high score if page is loaded for the first time or via hard reload
+const initNavs = performance.getEntriesByType("navigation");
+const isFirstTime = initNavs.length > 0 && initNavs[0].type === "navigate";
+const isHard = isHardReload();
+
+if (isFirstTime || isHard) {
+    clearHighScoreCookie();
+}
+
+let hiScore = getHighScoreCookie();
 let lives = 10; // Start with 10 lives
 let currentWave = 1;
 let waveTransitionTimer = 0;
@@ -3473,7 +3524,7 @@ function gameOver() {
 
     if (score > hiScore) {
         hiScore = score;
-        localStorage.setItem('starmertron_hiscore', hiScore);
+        setHighScoreCookie(hiScore);
         hudHiScore.textContent = String(hiScore).padStart(6, '0');
         showNotification("NEW HI-SCORE!");
     }
@@ -4108,7 +4159,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.8.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.8.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
