@@ -60,6 +60,8 @@ if (isFirstTime || isHard) {
 let hiScore = getHighScoreCookie();
 let lives = 10; // Start with 10 lives
 let currentWave = 1;
+let evilKeirSpawnedCount = 0;
+let waveStartTime = 0;
 let waveTransitionTimer = 0;
 let waveCompleteDelayTimer = 0;
 let waveStartDelayTimer = 0;
@@ -328,6 +330,9 @@ blackcabImg.src = 'blackcab.png';
 
 const vapeImg = new Image();
 vapeImg.src = 'vape.png';
+
+const evilKeirImg = new Image();
+evilKeirImg.src = 'labour_keir_evil_sprite.png';
 
 // Wave 16 "DON'T MENTION EUROPE" sprites preloading
 const ursulaImg = new Image();
@@ -1793,6 +1798,15 @@ class Enemy {
                 this.vx = Math.cos(wineAngle) * this.speed;
                 this.vy = Math.sin(wineAngle) * this.speed;
                 break;
+            case 'evil_keir':
+                this.radius = 30;
+                this.hp = 1;
+                this.color = '#d32f2f'; // Labour Red
+                this.scoreValue = 100;
+                this.speed = 1.0;
+                this.vx = 0;
+                this.vy = 0;
+                break;
             case 'tooth':
                 this.radius = 10;
                 this.hp = 1;
@@ -1833,6 +1847,23 @@ class Enemy {
                 }
                 return;
             }
+        }
+
+        if (this.type === 'evil_keir') {
+            const activeKeirs = enemies.filter(e => e.type === 'evil_keir');
+            const idx = activeKeirs.indexOf(this);
+            if (idx !== -1) {
+                const spiralRotation = (Date.now() - waveStartTime) * 0.0006;
+                const elapsedMs = Date.now() - waveStartTime;
+                const baseDist = Math.max(80, 320 - elapsedMs * 0.006);
+                const angle = spiralRotation + (idx * Math.PI * 2) / 10;
+                const dist = baseDist + idx * 10;
+                const targetX = player.x + Math.cos(angle) * dist;
+                const targetY = player.y + Math.sin(angle) * dist;
+                this.x += (targetX - this.x) * 0.07;
+                this.y += (targetY - this.y) * 0.07;
+            }
+            return;
         }
 
         if (this.type === 'swarmer') {
@@ -3256,6 +3287,13 @@ class Enemy {
             drawImagePreservingAspect(ursulaImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'evil_keir') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 150) * 0.05;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(evilKeirImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'blue_passport') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
@@ -3603,7 +3641,7 @@ function startGame() {
 }
 
 function getWaveName(waveNum) {
-    const layoutWave = 1 + ((waveNum - 1) % 16);
+    const layoutWave = 1 + ((waveNum - 1) % 17);
     if (layoutWave === 1) return "TORY COLLAPSE";
     if (layoutWave === 2) return "REFORM BOOZE UP";
     if (layoutWave === 3) return "THE LORDS ARE REVOLTING";
@@ -3620,6 +3658,7 @@ function getWaveName(waveNum) {
     if (layoutWave === 14) return "GREEN BOSS";
     if (layoutWave === 15) return "LONDONCENTRIC";
     if (layoutWave === 16) return "DON'T MENTION EUROPE";
+    if (layoutWave === 17) return "SPIRAL OF SELF-DESTRUCTION";
     return "";
 }
 
@@ -3647,7 +3686,7 @@ function spawnWave() {
         return newEnemy;
     };
 
-    const layoutWave = 1 + ((currentWave - 1) % 16);
+    const layoutWave = 1 + ((currentWave - 1) % 17);
 
     // Design waves according to user requirements
     if (layoutWave === 1) {
@@ -3945,10 +3984,19 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('red_tape');
         for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
     }
+    else if (layoutWave === 17) {
+        // Wave 17 - Spiral of Self-destruction - Evil Keir spiral wave
+        evilKeirSpawnedCount = 0;
+        waveStartTime = Date.now();
+        for (let i = 0; i < 15; i++) {
+            spawnEnemy('evil_keir');
+            evilKeirSpawnedCount++;
+        }
+    }
 
     else {
-        // Wave 17+: Endless scaling mix with party isolation (only one party logo type per wave)
-        const scalar = 1 + (currentWave - 16) * 0.15;
+        // Wave 18+: Endless scaling mix with party isolation (only one party logo type per wave)
+        const scalar = 1 + (currentWave - 17) * 0.15;
         const totalParty = Math.floor(8 * scalar);
         const totalNeutrals = Math.floor(12 * scalar);
         
@@ -4220,6 +4268,30 @@ function updateGame(deltaTime) {
             spawnCollectible('bomb');
             timeSinceLastKill = 0;
             bombSpawnCooldownTimer = 30000; // 30 seconds cooldown
+        }
+    }
+
+    if (gameState === 'PLAYING') {
+        const layoutWave = 1 + ((currentWave - 1) % 17);
+        if (layoutWave === 17) {
+            const activeKeirCount = enemies.filter(e => e.type === 'evil_keir').length;
+            if (activeKeirCount < 15 && evilKeirSpawnedCount < 50) {
+                const numNeeded = Math.min(15 - activeKeirCount, 50 - evilKeirSpawnedCount);
+                for (let i = 0; i < numNeeded; i++) {
+                    let ex, ey, dist;
+                    const px = player ? player.x : ARENA_WIDTH / 2;
+                    const py = player ? player.y : ARENA_HEIGHT / 2;
+                    const safeRadius = 180;
+                    do {
+                        ex = Math.random() * (ARENA_WIDTH - 80) + 40;
+                        ey = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
+                        dist = Math.hypot(ex - px, ey - py);
+                    } while (dist < safeRadius);
+                    
+                    enemies.push(new Enemy(ex, ey, 'evil_keir'));
+                    evilKeirSpawnedCount++;
+                }
+            }
         }
     }
 
@@ -4810,7 +4882,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
