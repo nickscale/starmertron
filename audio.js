@@ -134,6 +134,33 @@ class RetroAudioEngine {
         osc.stop(time + 0.3);
     }
 
+    // Play projectile destruction sound (retro pop)
+    playProjectileDestroy() {
+        if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
+        this.resumeContext();
+
+        const time = this.ctx.currentTime;
+        
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = this.noiseBuffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(600, time);
+        filter.frequency.exponentialRampToValueAtTime(150, time + 0.15);
+        
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.4, time);
+        gain.gain.linearRampToValueAtTime(0.01, time + 0.18);
+        
+        noiseNode.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.masterVolume);
+        
+        noiseNode.start(time);
+        noiseNode.stop(time + 0.2);
+    }
+
     // Play retro item collection sound (chirpy arpeggio)
     playCollect() {
         if (!this.ctx || this.isMuted) return;

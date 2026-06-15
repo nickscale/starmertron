@@ -155,12 +155,19 @@ mandipedeFaceImg.src = 'mandipede_face.png';
 const euroSpriteImg = new Image();
 euroSpriteImg.src = 'euro_sprite.png';
 
-const euroCentImg = new Image();
-euroCentImg.src = 'euro_cent.png';
 
-// Preload handcuffs image
+
+// Preload handcuffs image (replaced with cuffs)
 const handcuffsImg = new Image();
-handcuffsImg.src = 'handcuffs.png';
+handcuffsImg.src = 'cuffs.png';
+
+// Preload dvds image
+const dvdsImg = new Image();
+dvdsImg.src = 'dvds.png';
+
+// Preload paper plane image
+const paperPlaneImg = new Image();
+paperPlaneImg.src = 'paper_plane.png';
 
 // Preload newly replaced sprites (banknotes, cigarettes, student cap)
 const banknotesImg = new Image();
@@ -206,10 +213,10 @@ const whatsappImg = new Image();
 whatsappImg.src = 'whatsapp.png';
 
 const cannabisImg = new Image();
-cannabisImg.src = 'cannabis.png';
+cannabisImg.src = 'greens_cannabis.png';
 
 const tieDyeImg = new Image();
-tieDyeImg.src = 'tie_dye.png';
+tieDyeImg.src = 'greens_tiedye.png';
 
 const labourLogoImg = new Image();
 labourLogoImg.src = 'labour_party_logo_sprite.png';
@@ -231,6 +238,99 @@ partyRingsImg.src = 'party_rings.png';
 
 const cakeImg = new Image();
 cakeImg.src = 'cake.png';
+
+const ginImg = new Image();
+ginImg.src = 'gin.png';
+
+const sewageTankImg = new Image();
+sewageTankImg.src = 'sewage_tank.png';
+
+const poopProjectileImg = new Image();
+poopProjectileImg.src = 'poop_projectile.png';
+
+const deadDuckImg = new Image();
+deadDuckImg.src = 'dead_duck.png';
+
+const deadFishImg = new Image();
+deadFishImg.src = 'dead_fish.png';
+
+const toxicJarImg = new Image();
+toxicJarImg.src = 'toxic_jar.png';
+
+const sandalsImg = new Image();
+sandalsImg.src = 'sandals.png';
+
+const avocadoImg = new Image();
+avocadoImg.src = 'avocado_on_toast.png';
+
+const oatMilkImg = new Image();
+oatMilkImg.src = 'oat_milk.png';
+
+const flyImg = new Image();
+flyImg.src = 'fly.png';
+
+const toryCondomImg = new Image();
+toryCondomImg.src = 'tory_condom.png';
+
+const rubberRingImg = new Image();
+rubberRingImg.src = 'rubber_ring.png';
+
+const teddyBearImg = new Image();
+teddyBearImg.src = 'teddy_bear.png';
+
+const monsterCanImg = new Image();
+monsterCanImg.src = 'monster_can.png';
+
+const orangeMalletImg = new Image();
+orangeMalletImg.src = 'orange_mallet.png';
+
+const trafficConeImg = new Image();
+trafficConeImg.src = 'traffic_cone.png';
+
+const toteBagImg = new Image();
+toteBagImg.src = 'tote_bag.png';
+
+const solarPanelImg = new Image();
+solarPanelImg.src = 'solar_panel.png';
+
+const sunscreenImg = new Image();
+sunscreenImg.src = 'sunscreen.png';
+
+const electricFanImg = new Image();
+electricFanImg.src = 'electric_fan.png';
+
+const bonusBBImg = new Image();
+bonusBBImg.src = 'bonus_BB.png';
+
+// Londoncentric sprites preloading
+const sadiqImg = new Image();
+sadiqImg.src = 'sadiq.png';
+
+const limeBikeImg = new Image();
+limeBikeImg.src = 'lime_bike.png';
+
+const policeHelmetImg = new Image();
+policeHelmetImg.src = 'police_helmet.png';
+
+const punkImg = new Image();
+punkImg.src = 'punk.png';
+
+const speedCameraImg = new Image();
+speedCameraImg.src = 'speed_camera.png';
+
+function drawImagePreservingAspect(img, radius, scale = 1.0) {
+    if (!img || !img.complete || img.naturalWidth === 0) return;
+    const aspect = img.naturalWidth / img.naturalHeight;
+    let w, h;
+    if (aspect >= 1) {
+        w = radius * 2 * scale;
+        h = w / aspect;
+    } else {
+        h = radius * 2 * scale;
+        w = h * aspect;
+    }
+    ctx.drawImage(img, -w / 2, -h / 2, w, h);
+}
 
 
 
@@ -299,6 +399,26 @@ window.addEventListener('keydown', (e) => {
         isStrafing = true;
     }
 
+    // Weapon Selection Keys
+    if (e.key === '1') {
+        if (player) {
+            player.bulletType = 'laser';
+            showNotification("WEAPON: LASER");
+        }
+    }
+    if (e.key === '2') {
+        if (player) {
+            player.bulletType = 'brown_peanut';
+            showNotification("WEAPON: POOP");
+        }
+    }
+    if (e.key === '3') {
+        if (player) {
+            player.bulletType = 'diesel_smoke';
+            showNotification("WEAPON: DIESEL SMOKE");
+        }
+    }
+
     // Secret Invincibility Cheat Mode (Shift+I key)
     if (e.key.toLowerCase() === 'i' && e.shiftKey) {
         if (player) {
@@ -308,16 +428,50 @@ window.addEventListener('keydown', (e) => {
         }
     }
 
-    // Secret Kill All Enemies Cheat Mode (Shift+K key)
+    // Secret Kill All Enemies Cheat Mode (Shift+L key) - Skips transition and immediately draws next level
+    if (e.key.toLowerCase() === 'l' && e.shiftKey) {
+        if (gameState === 'PLAYING') {
+            bullets = [];
+            enemyBullets = [];
+            collectibles = [];
+            waveCompleteDelayTimer = 0;
+            waveTransitionTimer = 0;
+            waveStartDelayTimer = 0;
+            currentWave++;
+            hudWave.textContent = currentWave;
+            spawnWave();
+            showNotification(getWaveName(currentWave) + "\nCHEAT: NEXT WAVE", 440);
+        }
+    }
+
+    // Secret Skip to Previous Wave Cheat Mode (Shift+J key)
+    if (e.key.toLowerCase() === 'j' && e.shiftKey) {
+        if (gameState === 'PLAYING') {
+            currentWave = Math.max(1, currentWave - 1);
+            hudWave.textContent = currentWave;
+            spawnWave();
+            showNotification(getWaveName(currentWave) + "\nCHEAT: PREV WAVE", 440);
+        }
+    }
+
+    // Secret Restart Current Wave Cheat Mode (Shift+K key)
     if (e.key.toLowerCase() === 'k' && e.shiftKey) {
         if (gameState === 'PLAYING') {
-            enemies = [];
-            showNotification("CHEAT: WAVE PURGED!");
+            spawnWave();
+            showNotification(getWaveName(currentWave) + "\nCHEAT: RESTARTED", 440);
+        }
+    }
+
+    // Secret Kill Player / End Current Life (Shift+U key)
+    if (e.key.toLowerCase() === 'u' && e.shiftKey) {
+        if (gameState === 'PLAYING') {
+            playerDeath(true);
+            showNotification("CHEAT: LIFE ENDED");
         }
     }
 
     // Toggle Pause
-    if (e.key === 'Escape' || e.key.toLowerCase() === 'p') {
+    if (e.key.toLowerCase() === 'p') {
         if (gameState === 'PLAYING') {
             pauseGame();
         } else if (gameState === 'PAUSED') {
@@ -405,7 +559,7 @@ btnRestart.addEventListener('click', () => {
 let notificationTimer = 0;
 let notificationText = "";
 function showNotification(text, duration = 110) {
-    notificationText = text;
+    notificationText = String(text).toUpperCase();
     notificationTimer = duration; // Slightly longer to read specific wave names
 }
 
@@ -427,6 +581,13 @@ class Player {
         this.bonusInvincibilityTimer = 0; // 3 seconds bonus invincibility (ms)
         this.threeWayTimer = 0; // Three-way firing powerup timer (ms)
         this.bouncyShotsTimer = 0; // Bouncy shots powerup timer (ms)
+        this.bulletType = 'laser';
+        this.catAssistantTimer = 0;
+        this.catShootTimer = 0;
+        this.catX = x;
+        this.catY = y;
+        this.catVx = 0;
+        this.catVy = 0;
     }
 
     update(deltaTime) {
@@ -489,6 +650,85 @@ class Player {
                 this.bouncyShotsTimer = 0;
             }
         }
+
+        if (this.catAssistantTimer > 0) {
+            this.catAssistantTimer -= deltaTime;
+            if (this.catAssistantTimer <= 0) {
+                this.catAssistantTimer = 0;
+            }
+
+            // Move independently
+            if (this.catVx === undefined || this.catVy === undefined || (this.catVx === 0 && this.catVy === 0)) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 2.0;
+                this.catVx = Math.cos(angle) * speed;
+                this.catVy = Math.sin(angle) * speed;
+            }
+            this.catX += this.catVx;
+            this.catY += this.catVy;
+
+            // Bounce off boundaries of playing area
+            const catRadius = 25;
+            if (this.catX - catRadius <= 10) {
+                this.catX = catRadius + 11;
+                this.catVx = Math.abs(this.catVx);
+            } else if (this.catX + catRadius >= ARENA_WIDTH - 10) {
+                this.catX = ARENA_WIDTH - catRadius - 11;
+                this.catVx = -Math.abs(this.catVx);
+            }
+            if (this.catY - catRadius <= ARENA_CEILING) {
+                this.catY = catRadius + ARENA_CEILING + 1;
+                this.catVy = Math.abs(this.catVy);
+            } else if (this.catY + catRadius >= ARENA_HEIGHT - 10) {
+                this.catY = ARENA_HEIGHT - catRadius - 11;
+                this.catVy = -Math.abs(this.catVy);
+            }
+
+            // Smoothly change velocity over time for a wandering effect
+            this.catVx += (Math.random() - 0.5) * 0.2;
+            this.catVy += (Math.random() - 0.5) * 0.2;
+
+            // Clamp velocity to a reasonable speed
+            const speed = Math.hypot(this.catVx, this.catVy);
+            const maxSpeed = 3.0;
+            if (speed > maxSpeed) {
+                this.catVx = (this.catVx / speed) * maxSpeed;
+                this.catVy = (this.catVy / speed) * maxSpeed;
+            }
+
+            // Cat shooting logic: shoots every 400ms at the nearest enemy
+            if (!this.catShootTimer) this.catShootTimer = 0;
+            this.catShootTimer += deltaTime;
+            if (this.catShootTimer > 400) {
+                this.catShootTimer = 0;
+                
+                // Find nearest enemy
+                let nearestEnemy = null;
+                let minDist = Infinity;
+                enemies.forEach(e => {
+                    const d = Math.hypot(e.x - this.catX, e.y - this.catY);
+                    if (d < minDist) {
+                        minDist = d;
+                        nearestEnemy = e;
+                    }
+                });
+
+                if (nearestEnemy) {
+                    const angle = Math.atan2(nearestEnemy.y - this.catY, nearestEnemy.x - this.catX);
+                    const speed = 7.0;
+                    const vx = Math.cos(angle) * speed;
+                    const vy = Math.sin(angle) * speed;
+                    bullets.push(new Bullet(this.catX, this.catY, vx, vy, 'player', 'laser'));
+                    window.audio.playShoot();
+                }
+            }
+        } else {
+            // Keep cat at player position so it spawns/appears smoothly from player
+            this.catX = this.x;
+            this.catY = this.y;
+            this.catVx = undefined;
+            this.catVy = undefined;
+        }
     }
 
     shoot() {
@@ -497,18 +737,20 @@ class Player {
         const bx = this.x + Math.cos(shootAngle) * 20; // Spawn closer to floating mouth
         const by = this.y + Math.sin(shootAngle) * 20;
 
+        const bulletType = this.bulletType || 'laser';
+
         if (this.threeWayTimer > 0) {
             // Three-way splay: center, left (-18 degrees / -0.314 rad), right (+18 degrees / +0.314 rad)
             const angles = [shootAngle, shootAngle - 0.314, shootAngle + 0.314];
             angles.forEach(angle => {
                 const vx = Math.cos(angle) * bulletSpeed;
                 const vy = Math.sin(angle) * bulletSpeed;
-                bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+                bullets.push(new Bullet(bx, by, vx, vy, 'player', bulletType));
             });
         } else {
             const vx = Math.cos(shootAngle) * bulletSpeed;
             const vy = Math.sin(shootAngle) * bulletSpeed;
-            bullets.push(new Bullet(bx, by, vx, vy, 'player'));
+            bullets.push(new Bullet(bx, by, vx, vy, 'player', bulletType));
         }
         window.audio.playShoot();
     }
@@ -533,7 +775,7 @@ class Player {
         }
 
         // Draw Starmer's floating head image
-        ctx.drawImage(starmerImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+        drawImagePreservingAspect(starmerImg, this.radius);
 
         ctx.restore();
     }
@@ -545,7 +787,7 @@ class Bullet {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 12 : (type === 'silver_coin' ? 28 : (type === 'diesel_smoke' ? 14 : 4))));
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 15 : (type === 'diesel_smoke' ? 14 : 4)));
         this.origin = origin;
         this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
         this.bounceCount = 0;
@@ -644,28 +886,7 @@ class Bullet {
             ctx.translate(this.x, this.y);
             ctx.rotate(angle);
             
-            ctx.fillStyle = '#8b5a2b';
-            ctx.strokeStyle = '#5c3818';
-            ctx.lineWidth = 2;
-            
-            // Draw overlapping poop segments to look lumpy
-            ctx.beginPath();
-            ctx.arc(-6, -1, 7, 0, Math.PI * 2);
-            ctx.arc(0, 1, 8, 0, Math.PI * 2);
-            ctx.arc(6, -1, 6.5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            
-            // Texture spots
-            ctx.fillStyle = '#5c3818';
-            ctx.beginPath();
-            ctx.arc(-3, -2, 1.5, 0, Math.PI * 2);
-            ctx.arc(3, 2, 1.2, 0, Math.PI * 2);
-            ctx.fill();
-        } else if (this.type === 'silver_coin') {
-            // Euro cent symbol dropping down
-            ctx.translate(this.x, this.y);
-            ctx.drawImage(euroCentImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(poopProjectileImg, this.radius);
         } else if (this.type === 'diesel_smoke') {
             // Dark diesel smoke clouds - drawn with multiple overlapping circles
             ctx.fillStyle = 'rgba(80, 80, 80, 0.45)';
@@ -803,12 +1024,142 @@ class Enemy {
                 this.vy = Math.sin(greenAngle) * this.speed;
                 break;
             case 'libdem': // Yellow Lib Dem bird
-                this.radius = 24.2;
+                this.radius = 36.3; // 50% larger
                 this.hp = 1;
                 this.color = '#ffd700';
                 this.scoreValue = 300;
                 this.dropTimer = 0;
                 this.vx = 2.2;
+                break;
+            case 'dead_fish':
+                this.radius = 30; // 25% bigger (original 24)
+                this.hp = 1;
+                this.color = '#78909c';
+                this.scoreValue = 150;
+                this.speed = 1.2 + currentWave * 0.04;
+                const dfAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(dfAngle) * this.speed;
+                this.vy = Math.sin(dfAngle) * this.speed;
+                break;
+            case 'dead_duck':
+                this.radius = 32.5; // 25% bigger (original 26)
+                this.hp = 1;
+                this.color = '#5d4037';
+                this.scoreValue = 150;
+                this.speed = 1.1 + currentWave * 0.04;
+                const ddAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ddAngle) * this.speed;
+                this.vy = Math.sin(ddAngle) * this.speed;
+                break;
+            case 'toxic_jar':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#00e676';
+                this.scoreValue = 250;
+                this.speed = 1.3 + currentWave * 0.05;
+                const tjAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tjAngle) * this.speed;
+                this.vy = Math.sin(tjAngle) * this.speed;
+                break;
+            case 'fly':
+                this.radius = 18;
+                this.hp = 1;
+                this.color = '#37474f';
+                this.scoreValue = 100;
+                this.speed = 1.8 + currentWave * 0.05;
+                const flyAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(flyAngle) * this.speed;
+                this.vy = Math.sin(flyAngle) * this.speed;
+                break;
+            case 'tory_condom':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#bbdefb';
+                this.scoreValue = 120;
+                this.speed = 1.0 + currentWave * 0.03;
+                const tcAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tcAngle) * this.speed;
+                this.vy = Math.sin(tcAngle) * this.speed;
+                break;
+            case 'handcuffs':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#e91e63'; // Pink
+                this.scoreValue = 150;
+                this.speed = 0.8 + currentWave * 0.04;
+                const hcAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(hcAngle) * this.speed;
+                this.vy = Math.sin(hcAngle) * this.speed;
+                break;
+            case 'poo':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#8b5a2b'; // Sienna Brown
+                this.scoreValue = 120;
+                this.speed = 0.7 + currentWave * 0.03;
+                const pooAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(pooAngle) * this.speed;
+                this.vy = Math.sin(pooAngle) * this.speed;
+                break;
+            case 'dvds':
+                this.radius = 26;
+                this.hp = 1;
+                this.color = '#00e5ff'; // Neon Blue
+                this.scoreValue = 180;
+                this.speed = 1.0 + currentWave * 0.04;
+                const dvdAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(dvdAngle) * this.speed;
+                this.vy = Math.sin(dvdAngle) * this.speed;
+                break;
+            case 'rubber_ring':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#ffeb3b';
+                this.scoreValue = 150;
+                this.speed = 0.8 + currentWave * 0.04;
+                const rrAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(rrAngle) * this.speed;
+                this.vy = Math.sin(rrAngle) * this.speed;
+                break;
+            case 'teddy_bear':
+                this.radius = 25;
+                this.hp = 1;
+                this.color = '#e57373';
+                this.scoreValue = 180;
+                this.speed = 0.7 + currentWave * 0.03;
+                const tbAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tbAngle) * this.speed;
+                this.vy = Math.sin(tbAngle) * this.speed;
+                break;
+            case 'monster_can':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#4caf50';
+                this.scoreValue = 200;
+                this.speed = 1.1 + currentWave * 0.05;
+                const mcAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(mcAngle) * this.speed;
+                this.vy = Math.sin(mcAngle) * this.speed;
+                break;
+            case 'orange_mallet':
+                this.radius = 26;
+                this.hp = 1;
+                this.color = '#ff9800';
+                this.scoreValue = 160;
+                this.speed = 0.9 + currentWave * 0.04;
+                const omallAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(omallAngle) * this.speed;
+                this.vy = Math.sin(omallAngle) * this.speed;
+                break;
+            case 'traffic_cone':
+                this.radius = 23;
+                this.hp = 1;
+                this.color = '#ff5722';
+                this.scoreValue = 140;
+                this.speed = 0.8 + currentWave * 0.04;
+                const tcConeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tcConeAngle) * this.speed;
+                this.vy = Math.sin(tcConeAngle) * this.speed;
                 break;
             case 'mandipede': // Boss centipede segment
                 this.radius = 18;
@@ -842,7 +1193,6 @@ class Enemy {
                 this.vx = Math.cos(ecAngle) * this.speed;
                 this.vy = Math.sin(ecAngle) * this.speed;
                 this.chompCycle = 0;
-                this.coinTimer = 2500 + Math.random() * 1500;
                 break;
             case 'ed_davey':
                 this.radius = 48; // giant size
@@ -869,7 +1219,7 @@ class Enemy {
                 this.hp = 20;
                 this.color = '#ff80ab';
                 this.scoreValue = 250;
-                this.speed = 0.5 + currentWave * 0.03;
+                this.speed = 0.5 + currentWave * 0.01;
                 break;
             case 'mini_brain':
                 this.radius = 10;
@@ -971,26 +1321,8 @@ class Enemy {
                 this.vx = Math.cos(cakeAngle) * this.speed;
                 this.vy = Math.sin(cakeAngle) * this.speed;
                 break;
-            case 'brighton_rock':
-                this.radius = 20;
-                this.hp = 1;
-                this.color = '#e91e63';
-                this.scoreValue = 200;
-                this.speed = 0.5;
-                const brAngle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(brAngle) * this.speed;
-                this.vy = Math.sin(brAngle) * this.speed;
-                break;
-            case 'bikini':
-                this.radius = 27; // enlarged
-                this.hp = 1;
-                this.color = '#ff4081';
-                this.scoreValue = 150;
-                this.speed = 0.6;
-                const bikAngle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(bikAngle) * this.speed;
-                this.vy = Math.sin(bikAngle) * this.speed;
-                break;
+
+
             case 'banknote':
                 this.radius = 31; // enlarged
                 this.hp = 1;
@@ -1001,15 +1333,55 @@ class Enemy {
                 this.vx = Math.cos(bnAngle) * this.speed;
                 this.vy = Math.sin(bnAngle) * this.speed;
                 break;
-            case 'ooze_bucket':
-                this.radius = 30; // enlarged
+            case 'paper_plane':
+                this.radius = 23;
                 this.hp = 1;
-                this.color = '#39ff14';
-                this.scoreValue = 200;
-                this.speed = 0.5;
-                const oozeAngle = Math.random() * Math.PI * 2;
-                this.vx = Math.cos(oozeAngle) * this.speed;
-                this.vy = Math.sin(oozeAngle) * this.speed;
+                this.color = '#cccccc'; // Grey/White
+                this.scoreValue = 150;
+                this.speed = 0.8 + currentWave * 0.04;
+                const ppAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ppAngle) * this.speed;
+                this.vy = Math.sin(ppAngle) * this.speed;
+                break;
+            case 'tote_bag':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#81c784'; // Light green
+                this.scoreValue = 150;
+                this.speed = 0.8 + currentWave * 0.04;
+                const tbagAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tbagAngle) * this.speed;
+                this.vy = Math.sin(tbagAngle) * this.speed;
+                break;
+            case 'solar_panel':
+                this.radius = 25;
+                this.hp = 1;
+                this.color = '#1565c0'; // Dark blue
+                this.scoreValue = 180;
+                this.speed = 0.7 + currentWave * 0.03;
+                const spAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(spAngle) * this.speed;
+                this.vy = Math.sin(spAngle) * this.speed;
+                break;
+            case 'sunscreen':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#ffb74d'; // Orange
+                this.scoreValue = 150;
+                this.speed = 0.9 + currentWave * 0.04;
+                const ssAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ssAngle) * this.speed;
+                this.vy = Math.sin(ssAngle) * this.speed;
+                break;
+            case 'electric_fan':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#e91e63'; // Pink (matches sunglasses frames)
+                this.scoreValue = 150;
+                this.speed = 1.0 + currentWave * 0.05;
+                const efanAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(efanAngle) * this.speed;
+                this.vy = Math.sin(efanAngle) * this.speed;
                 break;
             case 'vape':
                 this.radius = 26.4; // Bigger Lost Mary vape
@@ -1164,6 +1536,36 @@ class Enemy {
                 this.vx = Math.cos(gcAngle) * this.speed;
                 this.vy = Math.sin(gcAngle) * this.speed;
                 break;
+            case 'sandals':
+                this.radius = 24;
+                this.speed = 0.9 + currentWave * 0.04;
+                this.hp = 1;
+                this.color = '#8d6e63';
+                this.scoreValue = 200;
+                const sdAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(sdAngle) * this.speed;
+                this.vy = Math.sin(sdAngle) * this.speed;
+                break;
+            case 'avocado_on_toast':
+                this.radius = 22;
+                this.speed = 0.8 + currentWave * 0.04;
+                this.hp = 1;
+                this.color = '#4caf50';
+                this.scoreValue = 200;
+                const avAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(avAngle) * this.speed;
+                this.vy = Math.sin(avAngle) * this.speed;
+                break;
+            case 'oat_milk':
+                this.radius = 25;
+                this.speed = 1.0 + currentWave * 0.04;
+                this.hp = 1;
+                this.color = '#e0f7fa';
+                this.scoreValue = 200;
+                const omAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(omAngle) * this.speed;
+                this.vy = Math.sin(omAngle) * this.speed;
+                break;
             case 'padlocks':
                 this.radius = 27.5;
                 this.speed = 0.5;
@@ -1230,6 +1632,57 @@ class Enemy {
                 this.vx = Math.cos(embAngle) * this.speed;
                 this.vy = Math.sin(embAngle) * this.speed;
                 break;
+            case 'sadiq_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#ff9800';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const sadiqAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(sadiqAngle) * this.speed;
+                this.vy = Math.sin(sadiqAngle) * this.speed;
+                break;
+            case 'lime_bike':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#00ff00';
+                this.scoreValue = 150;
+                this.speed = 1.6 + currentWave * 0.04;
+                const limeBikeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(limeBikeAngle) * this.speed;
+                this.vy = Math.sin(limeBikeAngle) * this.speed;
+                break;
+            case 'police_helmet':
+                this.radius = 22;
+                this.hp = 2;
+                this.color = '#0d47a1';
+                this.scoreValue = 200;
+                this.speed = 1.0 + currentWave * 0.03;
+                const policeHelmetAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(policeHelmetAngle) * this.speed;
+                this.vy = Math.sin(policeHelmetAngle) * this.speed;
+                break;
+            case 'punk':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#e91e63';
+                this.scoreValue = 150;
+                this.speed = 1.2 + currentWave * 0.04;
+                const punkAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(punkAngle) * this.speed;
+                this.vy = Math.sin(punkAngle) * this.speed;
+                break;
+            case 'speed_camera':
+                this.radius = 20;
+                this.hp = 2;
+                this.color = '#ffd54f';
+                this.scoreValue = 250;
+                this.speed = 0;
+                this.vx = 0;
+                this.vy = 0;
+                this.fireTimer = Math.random() * 1000;
+                break;
             case 'tooth':
                 this.radius = 10;
                 this.hp = 1;
@@ -1249,7 +1702,7 @@ class Enemy {
     update(deltaTime) {
         this.angle += 0.03;
 
-        const layoutWave = 1 + ((currentWave - 1) % 18);
+        const layoutWave = 1 + ((currentWave - 1) % 15);
 
         // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
         if (layoutWave === 10) {
@@ -1414,7 +1867,7 @@ class Enemy {
                 const dy = player.y - this.y;
                 const dist = Math.hypot(dx, dy);
                 if (dist > 1) {
-                    const pursueSpeed = (0.6 + currentWave * 0.02) * 1.6;
+                    const pursueSpeed = (0.6 + currentWave * 0.008) * 1.6;
                     this.x += (dx / dist) * pursueSpeed;
                     this.y += (dy / dist) * pursueSpeed;
                 }
@@ -1453,7 +1906,6 @@ class Enemy {
             }
         }
         else if (this.type === 'sewage_tank') {
-            this.angle += 0.005;
             this.x += this.vx;
             this.y += this.vy;
 
@@ -1486,17 +1938,10 @@ class Enemy {
             if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
             this.chompCycle += 0.15;
-
-            // Coin dropping timer
-            this.coinTimer -= deltaTime;
-            if (this.coinTimer <= 0) {
-                this.coinTimer = 2500 + Math.random() * 1500;
-                enemyBullets.push(new Bullet(this.x, this.y + 12, 0, 2.4, 'enemy', 'silver_coin'));
-            }
         }
         else if (this.type === 'ed_davey') {
             this.angle += 0.064;
-            this.y = (ARENA_CEILING + 60) + (Math.sin(this.angle) * 0.5 + 0.5) * 350;
+            this.y = (ARENA_CEILING + 60) + (Math.sin(this.angle) * 0.5 + 0.5) * (ARENA_HEIGHT * 0.7 - (ARENA_CEILING + 60));
             
             // Bounce side to side horizontally
             if (!this.vx) this.vx = 3.2;
@@ -1644,7 +2089,7 @@ class Enemy {
                 enemies = enemies.filter(e => e !== this);
             }
         }
-        else if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(this.type)) {
+        else if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -1658,7 +2103,8 @@ class Enemy {
                     'zack_miniboss': '#6ab023',
                     'kemi_miniboss': '#0087dc',
                     'farage_miniboss': '#00d2c4',
-                    'ed_miniboss': '#ffd700'
+                    'ed_miniboss': '#ffd700',
+                    'sadiq_miniboss': '#ff9800'
                 };
                 particles.push(new Particle(
                     this.x + (Math.random() - 0.5) * 15,
@@ -1674,7 +2120,25 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'brighton_rock', 'bikini', 'banknote', 'ooze_bucket', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'needle', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake'].includes(this.type)) {
+        else if (this.type === 'speed_camera') {
+            // Stationary turret shooting tickets (silver coins / lasers) at player
+            if (!this.fireTimer) this.fireTimer = 0;
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 1800) {
+                this.fireTimer = 0;
+                const dx = player.x - this.x;
+                const dy = player.y - this.y;
+                const dist = Math.hypot(dx, dy);
+                if (dist > 5) {
+                    const ticketSpeed = 3.5;
+                    const vx = (dx / dist) * ticketSpeed;
+                    const vy = (dy / dist) * ticketSpeed;
+                    enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'silver_coin'));
+                    window.audio.playShoot();
+                }
+            }
+        }
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -1767,13 +2231,13 @@ class Enemy {
         else if (this.type === 'wig') {
             ctx.save();
             ctx.rotate(Math.sin(this.bobOffset) * 0.08);
-            ctx.drawImage(lordWigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(lordWigImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'newspaper') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(newspaperImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(newspaperImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'ballot_enemy') {
@@ -1814,20 +2278,20 @@ class Enemy {
             ctx.save();
             ctx.translate(0, Math.sin(this.bobOffset) * 15);
             ctx.rotate(Math.sin(this.angle * 0.5) * 0.08); // slow sway
-            ctx.drawImage(toryLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(toryLogoImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'reform') {
             ctx.save();
             const arrowAngle = (this.state === 'charging') ? Math.atan2(this.vy, this.vx) : this.targetAngle;
             ctx.rotate(arrowAngle);
-            ctx.drawImage(reformLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(reformLogoImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'green') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(greenLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(greenLogoImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'libdem') {
@@ -1835,7 +2299,7 @@ class Enemy {
             if (this.vx < 0) {
                 ctx.scale(-1, 1);
             }
-            ctx.drawImage(libdemLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(libdemLogoImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'mandipede') {
@@ -1843,7 +2307,7 @@ class Enemy {
                 ctx.save();
                 const wobble = Math.sin(Date.now() / 200) * 0.05;
                 ctx.rotate(wobble);
-                ctx.drawImage(mandipedeFaceImg, -this.radius * 1.5, -this.radius * 1.5, this.radius * 3, this.radius * 3);
+                drawImagePreservingAspect(mandipedeFaceImg, this.radius, 1.5);
                 ctx.restore();
             } else {
                 ctx.save();
@@ -1887,74 +2351,103 @@ class Enemy {
             }
         }
         else if (this.type === 'sewage_tank') {
-            // Sewage Treatment Tank - matches photo (circular tank with rotating yellow diameter bridge)
-            ctx.rotate(this.angle);
-            
-            // Concrete outer rim
-            ctx.fillStyle = '#b0bec5';
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Concrete outer wall line
-            ctx.strokeStyle = '#78909c';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Dark navy water inside
-            ctx.fillStyle = '#102a43'; // Deep dark navy
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius * 0.9, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Inner concrete lip wall
-            ctx.strokeStyle = '#90a4ae';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius * 0.9, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Central concrete hub
-            ctx.fillStyle = '#cfd8dc';
-            ctx.strokeStyle = '#78909c';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(0, 0, this.radius * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-
-            // Yellow diameter bridge/radial arm
-            ctx.strokeStyle = '#fbc02d'; // Yellow girder
-            ctx.lineWidth = 4.0;
-            ctx.lineCap = 'round';
-            ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(this.radius * 0.9, 0);
-            ctx.stroke();
-
-            // Bridge railings
-            ctx.strokeStyle = '#ffeb3b'; // Brighter yellow
-            ctx.lineWidth = 1.0;
-            ctx.beginPath();
-            // Left railing
-            ctx.moveTo(0, -3.5);
-            ctx.lineTo(this.radius * 0.9, -3.5);
-            // Right railing
-            ctx.moveTo(0, 3.5);
-            ctx.lineTo(this.radius * 0.9, 3.5);
-            ctx.stroke();
-
-            // White cross-braces walkway trusses
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 0.8;
-            ctx.beginPath();
-            for (let x = 6; x < this.radius * 0.9; x += 6) {
-                ctx.moveTo(x, -3.5);
-                ctx.lineTo(x, 3.5);
-            }
-            ctx.stroke();
+            drawImagePreservingAspect(sewageTankImg, this.radius);
+        }
+        else if (this.type === 'dead_fish') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(deadFishImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'dead_duck') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(deadDuckImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'toxic_jar') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(toxicJarImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'sandals') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(sandalsImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'avocado_on_toast') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(avocadoImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'oat_milk') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(oatMilkImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'fly') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(flyImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'tory_condom') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(toryCondomImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'handcuffs') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(handcuffsImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'poo') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(poopProjectileImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'dvds') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(dvdsImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'rubber_ring') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(rubberRingImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'teddy_bear') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(teddyBearImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'monster_can') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(monsterCanImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'orange_mallet') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(orangeMalletImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'traffic_cone') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(trafficConeImg, this.radius);
+            ctx.restore();
         }
         else if (this.type === 'euro_chomper') {
             const travelAngle = Math.atan2(this.vy, this.vx);
@@ -1962,7 +2455,7 @@ class Enemy {
             ctx.save();
             const wobble = Math.sin(this.chompCycle * 2) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(euroSpriteImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(euroSpriteImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'ed_davey') {
@@ -2004,7 +2497,7 @@ class Enemy {
             ctx.save();
             const wobble = Math.sin(Date.now() / 150) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(edImg, -20, -20, 40, 40);
+            drawImagePreservingAspect(edImg, 20);
             ctx.restore();
 
         }
@@ -2013,7 +2506,7 @@ class Enemy {
             ctx.translate(Math.sin(this.bobOffset) * 20, 0);
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 0.5) * 0.08); // slow sway matching other party logos like tory
-            ctx.drawImage(labourLogoImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(labourLogoImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'exploding_brain' || this.type === 'mini_brain') {
@@ -2043,7 +2536,7 @@ class Enemy {
             ctx.restore();
 
             // Draw the brain image asset
-            ctx.drawImage(brainBossImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(brainBossImg, this.radius);
 
             ctx.restore();
         }
@@ -2216,140 +2709,81 @@ class Enemy {
         else if (this.type === 'cigarette') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(cigarettesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(cigarettesImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'booze_enemy') {
             ctx.save();
-            const originalRadius = 20;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // Green glass bottle of booze
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.fillStyle = '#2e7d32'; // Green bottle glass
-            ctx.strokeStyle = '#1b5e20';
-            ctx.lineWidth = 1.5;
-
-            // Bottle body
-            ctx.beginPath();
-            ctx.roundRect(-10, -5, 20, 24, 3);
-            ctx.fill();
-            ctx.stroke();
-
-            // Bottle neck
-            ctx.fillRect(-4, -14, 8, 10);
-            ctx.strokeRect(-4, -14, 8, 10);
-
-            // Cork/cap
-            ctx.fillStyle = '#8d6e63';
-            ctx.fillRect(-3.5, -18, 7, 4);
-
-            // Bottle Label (White)
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-7, 0, 14, 12);
-            ctx.fillStyle = '#ff3d00'; // label text scribble
-            ctx.fillRect(-5, 3, 10, 2);
-            ctx.fillStyle = '#333333';
-            ctx.fillRect(-5, 7, 8, 1.5);
+            drawImagePreservingAspect(ginImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'candy_floss') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(candyflossImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(candyflossImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'toffee_apple') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(toffeeAppleImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(toffeeAppleImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'party_hat') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(partyHatImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(partyHatImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'party_rings') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(partyRingsImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(partyRingsImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'cake') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(cakeImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(cakeImg, this.radius);
             ctx.restore();
         }
-        else if (this.type === 'brighton_rock') {
-            // Striped Brighton Rock stick
-            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            
-            // Stick body
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(-this.radius * 1.1, -6, this.radius * 2.2, 12);
-            ctx.strokeStyle = '#e91e63'; // pink ends
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(-this.radius * 1.1, -6, this.radius * 2.2, 12);
 
-            // Brighton rock pink stripes
-            ctx.fillStyle = '#e91e63';
-            ctx.fillRect(-this.radius * 1.1, -6, 5, 12);
-            ctx.fillRect(this.radius * 1.1 - 5, -6, 5, 12);
-            
-            ctx.fillRect(-this.radius * 0.5, -6, 3, 12);
-            ctx.fillRect(0, -6, 3, 12);
-            ctx.fillRect(this.radius * 0.5, -6, 3, 12);
-        }
-        else if (this.type === 'bikini') {
-            ctx.save();
-            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(handcuffsImg, -this.radius * 1.15, -this.radius * 1.05, this.radius * 2.3, this.radius * 2.1);
-            ctx.restore();
-        }
+
         else if (this.type === 'banknote') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(banknotesImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(banknotesImg, this.radius);
             ctx.restore();
         }
-        else if (this.type === 'ooze_bucket') {
+        else if (this.type === 'paper_plane') {
             ctx.save();
-            const originalRadius = 20;
-            const scale = this.radius / originalRadius;
-            ctx.scale(scale, scale);
-            // Metal bucket spilling glowing green ooze
-            ctx.rotate(Math.sin(this.angle * 1.5) * 0.05);
-            ctx.fillStyle = '#78909c'; // grey bucket body
-            ctx.strokeStyle = '#455a64';
-            ctx.lineWidth = 1.8;
-
-            ctx.beginPath();
-            ctx.moveTo(-12, -7);
-            ctx.lineTo(12, -7);
-            ctx.lineTo(8, 12);
-            ctx.lineTo(-8, 12);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Bucket handle
-            ctx.beginPath();
-            ctx.arc(0, -7, 12, Math.PI, 0);
-            ctx.stroke();
-
-            // Spilling neon green ooze spilling out top and dripping
-            ctx.fillStyle = '#39ff14'; // glowing green
-            ctx.beginPath();
-            ctx.ellipse(0, -7, 12, 3, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Drip at the bottom left
-            ctx.beginPath();
-            ctx.ellipse(-6, 2, 4.5, 8, 0, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(paperPlaneImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'tote_bag') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(toteBagImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'solar_panel') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(solarPanelImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'sunscreen') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(sunscreenImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'electric_fan') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(electricFanImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'vape') {
@@ -2396,7 +2830,7 @@ class Enemy {
         else if (this.type === 'breakfast') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
-            ctx.drawImage(breakfastImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(breakfastImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'tshirt') {
@@ -2543,44 +2977,45 @@ class Enemy {
         else if (this.type === 'needle') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15); // slow oscillate
-            ctx.drawImage(bloodBagImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(bloodBagImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'grad_cap') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.1); // subtle sway
-            ctx.drawImage(diplomaImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(diplomaImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'lettuce') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(lettuceImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(lettuceImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'mop_head') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(mopHeadImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(mopHeadImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'pig') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(pigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(pigImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'tabloid') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(tabloidImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(tabloidImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'english_flag') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 0.5) * 0.12); // gentle sway
             
-            const w = this.radius * 2;
+            const aspect = englishFlagImg.complete && englishFlagImg.naturalHeight !== 0 ? (englishFlagImg.naturalWidth / englishFlagImg.naturalHeight) : 1.0;
+            const w = this.radius * 2 * aspect;
             const h = this.radius * 2;
             const sliceCount = 20;
             const sliceWidth = w / sliceCount;
@@ -2606,14 +3041,14 @@ class Enemy {
         else if (this.type === 'whatsapp') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
-            ctx.drawImage(whatsappImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(whatsappImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'cannabis') {
             ctx.save();
             ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
             if (cannabisImg.complete && cannabisImg.naturalWidth !== 0) {
-                ctx.drawImage(cannabisImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                drawImagePreservingAspect(cannabisImg, this.radius);
             } else {
                 ctx.fillStyle = '#2e7d32';
                 ctx.beginPath();
@@ -2626,7 +3061,7 @@ class Enemy {
             ctx.save();
             if (tieDyeImg.complete && tieDyeImg.naturalWidth !== 0) {
                 ctx.rotate(Math.sin(this.angle) * 0.15); // slow oscillate
-                ctx.drawImage(tieDyeImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+                drawImagePreservingAspect(tieDyeImg, this.radius);
             } else {
                 // Draw vector fallback (tie-dye tshirt)
                 ctx.scale(1.1, 1.1);
@@ -2722,35 +3157,68 @@ class Enemy {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(lordWigImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(lordWigImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'zack_miniboss') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(zackImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(zackImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'kemi_miniboss') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(kemiImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(kemiImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'farage_miniboss') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(farageImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(farageImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'ed_miniboss') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
             ctx.rotate(wobble);
-            ctx.drawImage(edImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(edImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'sadiq_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(sadiqImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'lime_bike') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(limeBikeImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'police_helmet') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(policeHelmetImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'punk') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(punkImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'speed_camera') {
+            ctx.save();
+            // speed cameras are stationary but track the player direction slightly
+            const angle = Math.atan2(player.y - this.y, player.x - this.x) - Math.PI / 2;
+            ctx.rotate(angle * 0.15);
+            drawImagePreservingAspect(speedCameraImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'tooth') {
@@ -2774,7 +3242,7 @@ class Collectible {
     constructor(x, y, type) {
         this.x = x;
         this.y = y;
-        this.type = type; // 'xvote', 'rose', 'bomb', 'three_way', or 'bouncy_shots'
+        this.type = type; // 'xvote', 'rose', 'bomb', 'three_way', 'bouncy_shots', or 'bonus_BB'
         this.radius = 20; 
         this.bobOffset = Math.random() * Math.PI * 2;
         this.pulseSize = 0;
@@ -2856,7 +3324,7 @@ class Collectible {
             ctx.restore();
         } else if (this.type === 'rose') {
             // Draw detailed rose image asset
-            ctx.drawImage(bonusRoseImg, -this.radius, -this.radius, this.radius * 2, this.radius * 2);
+            drawImagePreservingAspect(bonusRoseImg, this.radius);
         } else if (this.type === 'bomb') {
             // Draw a round black cartoon bomb with a fuse
             ctx.save();
@@ -2987,6 +3455,8 @@ class Collectible {
             ctx.fill();
 
             ctx.restore();
+        } else if (this.type === 'bonus_BB') {
+            drawImagePreservingAspect(bonusBBImg, this.radius);
         }
 
         ctx.restore();
@@ -3069,9 +3539,27 @@ function startGame() {
     window.audio.startMusic();
 
     spawnWave();
-    
-    showNotification("TORY COLLAPSE", 220);
+}
 
+function getWaveName(waveNum) {
+    const layoutWave = 1 + ((waveNum - 1) % 16);
+    if (layoutWave === 1) return "TORY COLLAPSE";
+    if (layoutWave === 2) return "REFORM BOOZE UP";
+    if (layoutWave === 3) return "THE LORDS ARE REVOLTING";
+    if (layoutWave === 4) return "LIB DEMS POLITICAL PARTY TIME";
+    if (layoutWave === 5) return "GREEN UNPLEASANT LAND";
+    if (layoutWave === 6) return "SEWAGE CRISIS";
+    if (layoutWave === 7) return "TORY PSYCHODRAMA";
+    if (layoutWave === 8) return "THE MANDIPEDE";
+    if (layoutWave === 9) return "DAVEY BUNGEE";
+    if (layoutWave === 10) return "COMMONS DEBATE";
+    if (layoutWave === 11) return "GREENS CLIMATE ANTICLIMAX";
+    if (layoutWave === 12) return "TORY SLEAZE";
+    if (layoutWave === 13) return "REFORM BOSS";
+    if (layoutWave === 14) return "GREEN BOSS";
+    if (layoutWave === 15) return "LONDONCENTRIC";
+    if (layoutWave === 16) return "EURO ZONE";
+    return "";
 }
 
 function spawnWave() {
@@ -3079,6 +3567,7 @@ function spawnWave() {
     bullets = [];
     enemyBullets = [];
     timeSinceLastKill = 0;
+    showNotification(getWaveName(currentWave) + "\nWAVE " + currentWave, 440);
 
     const px = player ? player.x : ARENA_WIDTH / 2;
     const py = player ? player.y : ARENA_HEIGHT / 2;
@@ -3092,10 +3581,12 @@ function spawnWave() {
             dist = Math.hypot(ex - px, ey - py);
         } while (dist < safeRadius);
 
-        enemies.push(new Enemy(ex, ey, type));
+        const newEnemy = new Enemy(ex, ey, type);
+        enemies.push(newEnemy);
+        return newEnemy;
     };
 
-    const layoutWave = 1 + ((currentWave - 1) % 18);
+    const layoutWave = 1 + ((currentWave - 1) % 16);
 
     // Design waves according to user requirements
     if (layoutWave === 1) {
@@ -3123,7 +3614,83 @@ function spawnWave() {
         spawnEnemy('farage_miniboss');
     }
     else if (layoutWave === 3) {
-        // Wave 3 - Boss level - Mandipede centipede + banknotes + tabloids + English flags + Labour logos + breakfast + diplomas + whatsapp
+        // Wave 3 - Boss level - Lords Boss - One large boss wig firing out lots of small wig enemies + fly + gin
+        const bossWig = new Enemy(ARENA_WIDTH / 2, 160, 'lord_wig_boss');
+        enemies.push(bossWig);
+
+        // Spawn 4 initial small wigs as guards
+        for (let i = 0; i < 4; i++) {
+            spawnEnemy('wig');
+        }
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy('fly');
+        }
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy('booze_enemy');
+        }
+    }
+    else if (layoutWave === 4) {
+        // Wave 4 - \"LIB DEMS POLITICAL PARTY TIME\" - Lib Dem bird, candy floss, toffee apples, party hats, party rings, cakes + Ed mini boss
+        for (let i = 0; i < 4; i++) {
+            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
+            const by = 80 + Math.random() * 100;
+            const bird = new Enemy(bx, by, 'libdem');
+            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
+            enemies.push(bird);
+        }
+        for (let i = 0; i < 5; i++) spawnEnemy('candy_floss');
+        for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
+        for (let i = 0; i < 3; i++) spawnEnemy('party_hat');
+        for (let i = 0; i < 3; i++) spawnEnemy('party_rings');
+        for (let i = 0; i < 3; i++) spawnEnemy('cake');
+        spawnEnemy('ed_miniboss');
+    }
+    else if (layoutWave === 5) {
+        // Wave 5 - "GREEN UNPLEASANT LAND" - Green party theme: Green logo, cannabis, tie dye, sandals, avocado, oat milk + Zack mini boss
+        for (let i = 0; i < 4; i++) spawnEnemy('green');
+        for (let i = 0; i < 3; i++) spawnEnemy('cannabis');
+        for (let i = 0; i < 3; i++) spawnEnemy('tie_dye');
+        for (let i = 0; i < 3; i++) spawnEnemy('sandals');
+        for (let i = 0; i < 3; i++) spawnEnemy('avocado_on_toast');
+        for (let i = 0; i < 3; i++) spawnEnemy('oat_milk');
+        spawnEnemy('zack_miniboss');
+    }
+    else if (layoutWave === 6) {
+        // Wave 6 - "SEWAGE CRISIS"
+        const boss = new Enemy(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, 'sewage_tank');
+        boss.radius = 90; // Twice the size (original 45)
+        enemies.push(boss);
+        for (let i = 0; i < 4; i++) {
+            spawnEnemy('dead_fish');
+        }
+        for (let i = 0; i < 4; i++) {
+            spawnEnemy('dead_duck');
+        }
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy('toxic_jar');
+        }
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy('fly');
+        }
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy('tory_condom');
+        }
+    }
+    else if (layoutWave === 7) {
+        // Wave 7 - Tory wave "Tory Psychodrama" - Exploding Brain Boss + Kemi Badenoch mini boss + banknotes, diplomas, lettuce, newspaper, mop, pig
+        const bossBrain = new Enemy(ARENA_WIDTH / 2, 160, 'exploding_brain');
+        enemies.push(bossBrain);
+        spawnEnemy('kemi_miniboss');
+        
+        for (let i = 0; i < 3; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 3; i++) spawnEnemy('grad_cap'); // diploma
+        for (let i = 0; i < 3; i++) spawnEnemy('lettuce');
+        for (let i = 0; i < 3; i++) spawnEnemy('newspaper');
+        for (let i = 0; i < 3; i++) spawnEnemy('mop_head');
+        for (let i = 0; i < 3; i++) spawnEnemy('pig');
+    }
+    else if (layoutWave === 8) {
+        // Wave 8 - Boss level - Mandipede centipede + banknotes + tabloids + English flags + Labour logos + breakfast + diplomas + whatsapp
         let lastSegment = null;
         for (let i = 0; i < 10; i++) {
             const sx = 150 - i * 25;
@@ -3147,81 +3714,10 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('english_flag');
         for (let i = 0; i < 2; i++) spawnEnemy('labour_enemy');
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
-        for (let i = 0; i < 2; i++) spawnEnemy('grad_cap'); // diploma
         for (let i = 0; i < 3; i++) spawnEnemy('whatsapp'); // new WhatsApp enemy
     }
-    else if (layoutWave === 4) {
-        // Wave 4 - \"LIB DEMS POLITICAL PARTY TIME\" - Lib Dem bird, candy floss, toffee apples, party hats, party rings, cakes + Ed mini boss
-        for (let i = 0; i < 4; i++) {
-            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
-            const by = 80 + Math.random() * 100;
-            const bird = new Enemy(bx, by, 'libdem');
-            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
-            enemies.push(bird);
-        }
-        for (let i = 0; i < 5; i++) spawnEnemy('candy_floss');
-        for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
-        for (let i = 0; i < 3; i++) spawnEnemy('party_hat');
-        for (let i = 0; i < 3; i++) spawnEnemy('party_rings');
-        for (let i = 0; i < 3; i++) spawnEnemy('cake');
-        spawnEnemy('ed_miniboss');
-    }
-    else if (layoutWave === 5) {
-        // Wave 5 - "Liberal Democraps" - Lib Dem bird + candy floss, toffee apples, Brighton rock + Ed mini boss
-        for (let i = 0; i < 4; i++) {
-            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
-            const by = 80 + Math.random() * 100;
-            const bird = new Enemy(bx, by, 'libdem');
-            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
-            enemies.push(bird);
-        }
-        for (let i = 0; i < 6; i++) spawnEnemy('candy_floss');
-        for (let i = 0; i < 5; i++) spawnEnemy('toffee_apple');
-        for (let i = 0; i < 5; i++) spawnEnemy('brighton_rock');
-        for (let i = 0; i < 2; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 2; i++) spawnEnemy('ballot_enemy');
-        spawnEnemy('ed_miniboss');
-    }
-    else if (layoutWave === 6) {
-        // Wave 6 - Boss level - Mandipede centipede
-        let lastSegment = null;
-        for (let i = 0; i < 10; i++) {
-            const sx = 150 - i * 25;
-            const sy = 120;
-            const segment = new Enemy(sx, sy, 'mandipede');
-            
-            if (i === 0) {
-                segment.segmentType = 'head';
-                segment.vx = 2.2;
-                segment.directionY = 1;
-                segment.hp = 10; // Head starts with 10 HP
-            } else {
-                segment.segmentType = 'body';
-                segment.leader = lastSegment;
-            }
-            enemies.push(segment);
-            lastSegment = segment;
-        }
-    }
-    else if (layoutWave === 7) {
-        // Wave 7 - Circular sewage treatment tank mini boss + newspapers & briefcases
-        const boss = new Enemy(ARENA_WIDTH / 2, ARENA_HEIGHT / 2, 'sewage_tank');
-        enemies.push(boss);
-        for (let i = 0; i < 4; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 4; i++) spawnEnemy('ballot_enemy');
-    }
-    else if (layoutWave === 8) {
-        // Wave 8 - Lords Boss - One large boss wig firing out lots of small wig enemies
-        const bossWig = new Enemy(ARENA_WIDTH / 2, 160, 'lord_wig_boss');
-        enemies.push(bossWig);
-
-        // Spawn 4 initial small wigs as guards
-        for (let i = 0; i < 4; i++) {
-            spawnEnemy('wig');
-        }
-    }
     else if (layoutWave === 9) {
-        // Wave 9 - Ed Davey mini boss + Lib Dem birds, candy floss, toffee apples, Brighton rock
+        // Wave 9 - Ed Davey mini boss + Lib Dem birds, rubber rings, teddy bears, monster cans, orange mallets, cones
         const boss = new Enemy(ARENA_WIDTH / 2, 160, 'ed_davey');
         enemies.push(boss);
         
@@ -3232,9 +3728,11 @@ function spawnWave() {
             bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
             enemies.push(bird);
         }
-        for (let i = 0; i < 2; i++) spawnEnemy('candy_floss');
-        for (let i = 0; i < 2; i++) spawnEnemy('toffee_apple');
-        for (let i = 0; i < 2; i++) spawnEnemy('brighton_rock');
+        for (let i = 0; i < 2; i++) spawnEnemy('rubber_ring');
+        for (let i = 0; i < 2; i++) spawnEnemy('teddy_bear');
+        for (let i = 0; i < 2; i++) spawnEnemy('monster_can');
+        for (let i = 0; i < 2; i++) spawnEnemy('orange_mallet');
+        for (let i = 0; i < 2; i++) spawnEnemy('traffic_cone');
     }
     else if (layoutWave === 10) {
         // Wave 10 - Commons Debate block-breaker grid layout: 3 stationary rows on each side
@@ -3244,7 +3742,7 @@ function spawnWave() {
         }
 
         const numRows = 9;
-        const baseSpacing = 70;
+        const baseSpacing = 82; // spaced slightly further apart (original 70)
         const maxGridHeight = (numRows - 1) * baseSpacing;
         const topPadding = ARENA_CEILING + 65;
         const bottomPadding = 75;
@@ -3263,90 +3761,80 @@ function spawnWave() {
             yPositions.push(startY + i * spacing);
         }
 
+        // Column coordinates (spaced further apart at 85px instead of 70px)
+        const colSpacing = 85;
+        const leftX1 = colSpacing;       // Back Row (Labour)
+        const leftX2 = colSpacing * 2;   // Middle Row (Labour)
+        const leftX3 = colSpacing * 3;   // Front Row (Labour)
+
+        const rightX1 = ARENA_WIDTH - colSpacing;       // Back Row (Conservatives)
+        const rightX2 = ARENA_WIDTH - colSpacing * 2;   // Middle Row (Conservatives)
+        const rightX3 = ARENA_WIDTH - colSpacing * 3;   // Front Row (Conservatives)
+
+        // Helper to spawn and clamp positions inside the playing area boundaries
+        const addCommonsEnemy = (x, y, type) => {
+            const enemy = new Enemy(x, y, type);
+            // Never place them outside the playing area
+            enemy.x = Math.max(enemy.radius + 15, Math.min(ARENA_WIDTH - enemy.radius - 15, enemy.x));
+            enemy.y = Math.max(enemy.radius + ARENA_CEILING + 10, Math.min(ARENA_HEIGHT - enemy.radius - 15, enemy.y));
+            enemies.push(enemy);
+        };
+
         // Left Side (Labour): 3 Columns
-        // Front Row (x = 210) - Shields
-        yPositions.forEach((y, index) => {
-            const type = index % 2 === 0 ? 'ballot_enemy' : 'newspaper';
-            enemies.push(new Enemy(210, y, type));
-        });
-        // Middle Row (x = 140)
+        // Front Row (x = leftX3) - Shields
         yPositions.forEach((y, index) => {
             const type = index % 2 === 0 ? 'euro_chomper' : 'newspaper';
-            enemies.push(new Enemy(140, y, type));
+            addCommonsEnemy(leftX3, y, type);
         });
-        // Back Row (x = 70) - Active Shooters
+        // Middle Row (x = leftX2)
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'euro_chomper' : 'newspaper';
+            addCommonsEnemy(leftX2, y, type);
+        });
+        // Back Row (x = leftX1) - Active Shooters
         yPositions.forEach((y) => {
-            enemies.push(new Enemy(70, y, 'labour_enemy'));
+            addCommonsEnemy(leftX1, y, 'labour_enemy');
         });
 
         // Right Side (Conservative): 3 Columns
-        // Front Row (x = ARENA_WIDTH - 210) - Shields
-        yPositions.forEach((y, index) => {
-            const type = index % 2 === 0 ? 'banknote' : 'bikini';
-            enemies.push(new Enemy(ARENA_WIDTH - 210, y, type));
-        });
-        // Middle Row (x = ARENA_WIDTH - 140)
-        yPositions.forEach((y, index) => {
-            const type = index % 2 === 0 ? 'ooze_bucket' : 'banknote';
-            enemies.push(new Enemy(ARENA_WIDTH - 140, y, type));
-        });
-        // Back Row (x = ARENA_WIDTH - 70) - Active Shooters
+        // Front Row (x = rightX3) - Shields
         yPositions.forEach((y) => {
-            enemies.push(new Enemy(ARENA_WIDTH - 70, y, 'tory'));
+            addCommonsEnemy(rightX3, y, 'banknote');
+        });
+        // Middle Row (x = rightX2)
+        yPositions.forEach((y, index) => {
+            const type = index % 2 === 0 ? 'paper_plane' : 'banknote';
+            addCommonsEnemy(rightX2, y, type);
+        });
+        // Back Row (x = rightX1) - Active Shooters
+        yPositions.forEach((y) => {
+            addCommonsEnemy(rightX1, y, 'tory');
         });
     }
     else if (layoutWave === 11) {
-        // Wave 11 - Tory wave "Tory Psychodrama" - Giant Brain Boss + Tory trees, banknotes, ooze buckets, bikinis + Kemi Badenoch mini boss
-        const bossBrain = new Enemy(ARENA_WIDTH / 2, 160, 'exploding_brain');
-        enemies.push(bossBrain);
-        for (let i = 0; i < 4; i++) spawnEnemy('tory');
-        for (let i = 0; i < 2; i++) spawnEnemy('banknote');
-        for (let i = 0; i < 2; i++) spawnEnemy('ooze_bucket');
-        for (let i = 0; i < 2; i++) spawnEnemy('bikini');
-        spawnEnemy('kemi_miniboss');
-    }
-    else if (layoutWave === 12) {
-        // Wave 12 - Greens wave "Climate Catastrophe" - Green logo + tree branches, newspapers, tree trunks, cannabis, tie_dye + Zack mini bosses
-        for (let i = 0; i < 6; i++) spawnEnemy('green');
-        for (let i = 0; i < 4; i++) spawnEnemy('tree_trunk');
-        for (let i = 0; i < 4; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 4; i++) spawnEnemy('cannabis');
-        for (let i = 0; i < 4; i++) spawnEnemy('tie_dye');
+        // Wave 11 - Greens wave "GREENS CLIMATE ANTICLIMAX" - Green logo + tie-dyed T-shirt (tshirt), tote bag, solar panel, sunscreen, electric fan + Zack mini bosses
+        for (let i = 0; i < 4; i++) spawnEnemy('green');
+        for (let i = 0; i < 3; i++) spawnEnemy('tshirt');
+        for (let i = 0; i < 3; i++) spawnEnemy('tote_bag');
+        for (let i = 0; i < 3; i++) spawnEnemy('solar_panel');
+        for (let i = 0; i < 3; i++) spawnEnemy('sunscreen');
+        for (let i = 0; i < 3; i++) spawnEnemy('electric_fan');
         spawnEnemy('zack_miniboss');
     }
-    else if (layoutWave === 13) {
-        // Wave 13 - Reform wave "Reform Booze-up" - Reform arrows + cigarettes, booze, vapes, breakfast + Nigel Farage mini bosses
-        for (let i = 0; i < 6; i++) spawnEnemy('reform');
-        for (let i = 0; i < 6; i++) spawnEnemy('cigarette');
-        for (let i = 0; i < 6; i++) spawnEnemy('booze_enemy');
-        for (let i = 0; i < 3; i++) spawnEnemy('vape');
-        for (let i = 0; i < 3; i++) spawnEnemy('breakfast');
-        spawnEnemy('farage_miniboss');
-    }
-    else if (layoutWave === 14) {
-        // Wave 14 - Lib Dem wave "Lib Dem Funland" with candy floss, toffee apple, Brighton rock + Ed mini bosses
-        for (let i = 0; i < 4; i++) {
-            const bx = Math.random() * (ARENA_WIDTH - 120) + 60;
-            const by = 80 + Math.random() * 100;
-            const bird = new Enemy(bx, by, 'libdem');
-            bird.vx = (Math.random() > 0.5 ? 1 : -1) * 2.2;
-            enemies.push(bird);
-        }
-        for (let i = 0; i < 6; i++) spawnEnemy('candy_floss');
-        for (let i = 0; i < 6; i++) spawnEnemy('toffee_apple');
-        for (let i = 0; i < 6; i++) spawnEnemy('brighton_rock');
-        spawnEnemy('ed_miniboss');
-    }
-    else if (layoutWave === 15) {
-        // Wave 15 - Tory wave "Tory Sleaze" with bikinis, wads of banknotes, buckets green ooze + Kemi Badenoch mini bosses
+    else if (layoutWave === 12) {
+        // Wave 12 - Tory wave "Tory Sleaze" with banknotes, condoms, cuffs, gin, fly, poo, dvds + Kemi Badenoch mini bosses
         for (let i = 0; i < 6; i++) spawnEnemy('tory');
-        for (let i = 0; i < 6; i++) spawnEnemy('bikini');
-        for (let i = 0; i < 8; i++) spawnEnemy('banknote');
-        for (let i = 0; i < 6; i++) spawnEnemy('ooze_bucket');
+        for (let i = 0; i < 7; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 2; i++) spawnEnemy('tory_condom');
+        for (let i = 0; i < 5; i++) spawnEnemy('handcuffs');
+        for (let i = 0; i < 6; i++) spawnEnemy('booze_enemy');
+        for (let i = 0; i < 3; i++) spawnEnemy('fly');
+        for (let i = 0; i < 3; i++) spawnEnemy('poo');
+        for (let i = 0; i < 3; i++) spawnEnemy('dvds');
         spawnEnemy('kemi_miniboss');
     }
-    else if (layoutWave === 16) {
-        // Wave 16 - Reform Boss - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
+    else if (layoutWave === 13) {
+        // Wave 13 - Reform Boss - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
         const bossMerc = new Enemy(ARENA_WIDTH / 2, 160, 'reform_mercedes');
         enemies.push(bossMerc);
         for (let i = 0; i < 4; i++) spawnEnemy('reform');
@@ -3356,8 +3844,8 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
         spawnEnemy('farage_miniboss');
     }
-    else if (layoutWave === 17) {
-        // Wave 17 - Greens Boss - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
+    else if (layoutWave === 14) {
+        // Wave 14 - Greens Boss - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
         const gums = new Enemy(ARENA_WIDTH / 2, 160, 'false_teeth');
         enemies.push(gums);
 
@@ -3377,16 +3865,23 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('tie_dye');
         spawnEnemy('zack_miniboss');
     }
-    else if (layoutWave === 18) {
-        // Wave 18 - Euro chompers € symbols (Labour themed) + briefcases & newspapers
+    else if (layoutWave === 15) {
+        // Wave 15 - Londoncentric - Sadiq miniboss + lime bike, police helmet, punk, speed camera
+        spawnEnemy('sadiq_miniboss');
+        for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
+        for (let i = 0; i < 4; i++) spawnEnemy('police_helmet');
+        for (let i = 0; i < 4; i++) spawnEnemy('punk');
+        for (let i = 0; i < 2; i++) spawnEnemy('speed_camera');
+    }
+    else if (layoutWave === 16) {
+        // Wave 16 - Euro Zone (shifted from wave 15) - Euro chompers € symbols (Labour themed) + newspapers
         for (let i = 0; i < 6; i++) spawnEnemy('euro_chomper');
-        for (let i = 0; i < 3; i++) spawnEnemy('newspaper');
-        for (let i = 0; i < 3; i++) spawnEnemy('ballot_enemy');
+        for (let i = 0; i < 6; i++) spawnEnemy('newspaper');
     }
 
     else {
-        // Wave 19+: Endless scaling mix with party isolation (only one party logo type per wave)
-        const scalar = 1 + (currentWave - 18) * 0.15;
+        // Wave 17+: Endless scaling mix with party isolation (only one party logo type per wave)
+        const scalar = 1 + (currentWave - 16) * 0.15;
         const totalParty = Math.floor(8 * scalar);
         const totalNeutrals = Math.floor(12 * scalar);
         
@@ -3408,18 +3903,20 @@ function spawnWave() {
             }
         }
         
-        const neutralList = ['newspaper', 'ballot_enemy'];
+        const neutralList = ['newspaper'];
         for (let i = 0; i < totalNeutrals; i++) {
             const randNeutral = neutralList[Math.floor(Math.random() * neutralList.length)];
             spawnEnemy(randNeutral);
         }
     }
-    // Scatter scandal enemies in every wave
-    const numScandalEnemies = 4 + Math.floor(currentWave / 4);
-    const scandalTypes = ['needle', 'grad_cap'];
-    for (let i = 0; i < numScandalEnemies; i++) {
-        const randomType = scandalTypes[Math.floor(Math.random() * scandalTypes.length)];
-        spawnEnemy(randomType);
+    // Scatter scandal enemies in designated waves (TORY COLLAPSE = 1, LORDS ARE REVOLTING = 3, TORY PSYCHODRAMA = 7)
+    if ([1, 3, 7].includes(layoutWave)) {
+        const numScandalEnemies = 4 + Math.floor(currentWave / 4);
+        const scandalTypes = ['grad_cap'];
+        for (let i = 0; i < numScandalEnemies; i++) {
+            const randomType = scandalTypes[Math.floor(Math.random() * scandalTypes.length)];
+            spawnEnemy(randomType);
+        }
     }
 
     collectibles = [];
@@ -3435,14 +3932,19 @@ function spawnCollectible(forcedType) {
     let type = forcedType;
     if (!type) {
         const rand = Math.random();
-        if (rand < 0.4) {
-            type = 'xvote';
-        } else if (rand < 0.8) {
-            type = 'rose';
-        } else if (rand < 0.9) {
-            type = 'three_way';
+        if (currentWave > 15 && rand < 0.1) {
+            type = 'bonus_BB';
         } else {
-            type = 'bouncy_shots';
+            const itemRand = Math.random();
+            if (itemRand < 0.4) {
+                type = 'xvote';
+            } else if (itemRand < 0.8) {
+                type = 'rose';
+            } else if (itemRand < 0.9) {
+                type = 'three_way';
+            } else {
+                type = 'bouncy_shots';
+            }
         }
     }
     collectibles.push(new Collectible(cx, cy, type));
@@ -3485,8 +3987,8 @@ function resumeGame() {
     if (hudPauseBtn) hudPauseBtn.textContent = "PAUSE";
 }
 
-function playerDeath() {
-    if (player && (player.isInvincibleCheat || player.bonusInvincibilityTimer > 0)) {
+function playerDeath(force = false) {
+    if (!force && player && (player.isInvincibleCheat || player.bonusInvincibilityTimer > 0)) {
         return;
     }
 
@@ -3694,29 +4196,6 @@ function updateGame(deltaTime) {
             currentWave++;
             hudWave.textContent = currentWave;
             spawnWave();
-            
-            const layoutWave = 1 + ((currentWave - 1) % 18);
-            let waveMsg = "";
-            if (layoutWave === 1) waveMsg = "TORY COLLAPSE";
-            else if (layoutWave === 2) waveMsg = "REFORM BOOZE UP";
-            else if (layoutWave === 3) waveMsg = "BOSS - THE MANDIPEDE";
-            else if (layoutWave === 4) waveMsg = "LIB DEMS POLITICAL PARTY TIME";
-            else if (layoutWave === 5) waveMsg = "LIBERAL DEMOCRAPS";
-            else if (layoutWave === 6) waveMsg = "BOSS - THE MANDIPEDE";
-            else if (layoutWave === 7) waveMsg = "SEWAGE CRISIS";
-            else if (layoutWave === 8) waveMsg = "THE LORDS ARE REVOLTING";
-            else if (layoutWave === 9) waveMsg = "DAVEY BUNGEE";
-            else if (layoutWave === 10) waveMsg = "COMMONS DEBATE";
-            else if (layoutWave === 11) waveMsg = "TORY PSYCHODRAMA";
-            else if (layoutWave === 12) waveMsg = "CLIMATE CATASTROPHE";
-            else if (layoutWave === 13) waveMsg = "REFORM BOOZE-UP";
-            else if (layoutWave === 14) waveMsg = "LIB DEM FUNLAND";
-            else if (layoutWave === 15) waveMsg = "TORY SLEAZE";
-            else if (layoutWave === 16) waveMsg = "REFORM BOSS";
-            else if (layoutWave === 17) waveMsg = "GREEN BOSS";
-            else if (layoutWave === 18) waveMsg = "EURO ZONE";
-            
-            showNotification(waveMsg, 220);
         }
     }
 }
@@ -3729,6 +4208,9 @@ function collectItem(cIndex) {
     
     window.audio.playCollect();
     timeSinceLastKill = 0; // Reset countdown on any item collection
+    if (player) {
+        player.bonusInvincibilityTimer = 3000;
+    }
 
     if (col.type === 'bomb') {
         score += 250;
@@ -3796,7 +4278,7 @@ function collectItem(cIndex) {
     } else if (col.type === 'three_way') {
         score += 500;
         hudScore.textContent = String(score).padStart(6, '0');
-        showNotification("Triple Lock Guarantee");
+        showNotification("TRIPLE LOCK GUARANTEE");
         if (player) {
             player.threeWayTimer = 8000; // 8 seconds duration
         }
@@ -3806,6 +4288,13 @@ function collectItem(cIndex) {
         showNotification("BOUNCY SHOTS ACTIVE!");
         if (player) {
             player.bouncyShotsTimer = 10000; // 10 seconds duration
+        }
+    } else if (col.type === 'bonus_BB') {
+        score += 1000;
+        hudScore.textContent = String(score).padStart(6, '0');
+        showNotification("CAT ASSISTANT ACTIVE!");
+        if (player) {
+            player.catAssistantTimer = 10000; // 10 seconds duration
         }
     } else {
         const points = col.type === 'rose' ? 1000 : 500;
@@ -3827,14 +4316,45 @@ function collectItem(cIndex) {
 function checkCollisions() {
     if (!player) return;
 
+    // A0. Player Bullets vs Large Enemy Projectiles (poop and smoke)
+    for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+        const pBullet = bullets[bIndex];
+        for (let ebIndex = enemyBullets.length - 1; ebIndex >= 0; ebIndex--) {
+            const eBullet = enemyBullets[ebIndex];
+            if (eBullet.type === 'brown_peanut' || eBullet.type === 'diesel_smoke') {
+                const dist = Math.hypot(pBullet.x - eBullet.x, pBullet.y - eBullet.y);
+                if (dist < pBullet.radius + eBullet.radius) {
+                    bullets.splice(bIndex, 1);
+                    enemyBullets.splice(ebIndex, 1);
+                    const pColor = eBullet.type === 'brown_peanut' ? '#8b5a2b' : '#505050';
+                    for (let i = 0; i < 6; i++) {
+                        particles.push(new Particle(eBullet.x, eBullet.y, pColor));
+                    }
+                    window.audio.playProjectileDestroy();
+                    break;
+                }
+            }
+        }
+    }
+
     // A. Player Bullets vs Enemies
     for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
         const bullet = bullets[bIndex];
         for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
             const enemy = enemies[eIndex];
-            const dist = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y);
+            let collided = false;
+            if (enemy.type === 'sewage_tank') {
+                const aspect = 450 / 209;
+                const halfW = enemy.radius;
+                const halfH = enemy.radius / aspect;
+                const closestX = Math.max(enemy.x - halfW, Math.min(bullet.x, enemy.x + halfW));
+                const closestY = Math.max(enemy.y - halfH, Math.min(bullet.y, enemy.y + halfH));
+                collided = Math.hypot(bullet.x - closestX, bullet.y - closestY) < bullet.radius;
+            } else {
+                collided = Math.hypot(bullet.x - enemy.x, bullet.y - enemy.y) < bullet.radius + enemy.radius;
+            }
             
-            if (dist < bullet.radius + enemy.radius) {
+            if (collided) {
                 // Mandipede head invulnerability handling
                 if (enemy.type === 'mandipede' && enemy.segmentType === 'head') {
                     const hasBody = enemies.some(e => e.type === 'mandipede' && e.segmentType === 'body');
@@ -3913,12 +4433,22 @@ function checkCollisions() {
     if (gameState === 'PLAYING') {
         for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
             const enemy = enemies[eIndex];
-            const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y);
+            let collided = false;
+            if (enemy.type === 'sewage_tank') {
+                const aspect = 450 / 209;
+                const halfW = enemy.radius;
+                const halfH = enemy.radius / aspect;
+                const closestX = Math.max(enemy.x - halfW, Math.min(player.x, enemy.x + halfW));
+                const closestY = Math.max(enemy.y - halfH, Math.min(player.y, enemy.y + halfH));
+                collided = Math.hypot(player.x - closestX, player.y - closestY) < player.radius;
+            } else {
+                collided = Math.hypot(player.x - enemy.x, player.y - enemy.y) < player.radius + enemy.radius;
+            }
             
-             if (dist < player.radius + enemy.radius) {
+             if (collided) {
                 // Enemy dies!
                 // Bosses are not killed by collision; Starmer loses life but boss remains
-                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
                 if (isBoss) {
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
@@ -4137,6 +4667,23 @@ function drawGame() {
     
     if (player) {
         player.draw();
+        if (player.catAssistantTimer > 0) {
+            ctx.save();
+            const bobbing = Math.sin(Date.now() / 200) * 4;
+            ctx.translate(player.catX, player.catY + bobbing);
+            
+            // Draw the same rainbow halo circle surrounding it as the player
+            ctx.save();
+            ctx.strokeStyle = `hsl(${(Date.now() / 4) % 360}, 100%, 65%)`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, 0, 25 + 4, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+
+            drawImagePreservingAspect(bonusBBImg, 25);
+            ctx.restore();
+        }
     }
 
     ctx.save();
@@ -4154,13 +4701,24 @@ function drawCanvasHUD() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         
-        const alpha = Math.min(1.0, notificationTimer / 25);
+        let alpha = 1.0;
+        if (notificationTimer < 60) {
+            alpha = (Math.floor(notificationTimer / 4) % 2 === 0) ? 0.0 : 1.0;
+        }
         ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
         
         if (notificationText.startsWith('+') && player) {
             ctx.font = 'bold 15px "Press Start 2P", monospace';
             ctx.fillStyle = `rgba(255, 215, 0, ${alpha})`;
             ctx.fillText(notificationText, player.x, player.y - 38);
+        } else if (notificationText.includes('\n')) {
+            const lines = notificationText.split('\n');
+            ctx.fillStyle = `rgba(0, 229, 255, ${alpha})`;
+            ctx.fillText(lines[0], ARENA_WIDTH / 2, ARENA_HEIGHT / 2 - 10);
+            
+            ctx.font = 'normal 15px "Press Start 2P", monospace';
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.fillText(lines[1], ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 25);
         } else {
             ctx.fillStyle = `rgba(0, 229, 255, ${alpha})`;
             ctx.fillText(notificationText, ARENA_WIDTH / 2, ARENA_HEIGHT / 2 + 20);
@@ -4173,10 +4731,10 @@ function drawCanvasHUD() {
     // Render version number in bottom-right corner
     ctx.save();
     ctx.font = '8px "Press Start 2P", monospace';
-    ctx.fillStyle = '#666666';
+    ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.8.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.9.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
