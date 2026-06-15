@@ -326,6 +326,9 @@ phoneboxImg.src = 'phonebox.png';
 const blackcabImg = new Image();
 blackcabImg.src = 'blackcab.png';
 
+const vapeImg = new Image();
+vapeImg.src = 'vape.png';
+
 // Wave 16 "DON'T MENTION EUROPE" sprites preloading
 const ursulaImg = new Image();
 ursulaImg.src = 'ursula.png';
@@ -1167,7 +1170,7 @@ class Enemy {
                 this.vy = Math.sin(tbAngle) * this.speed;
                 break;
             case 'monster_can':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 1;
                 this.color = '#4caf50';
                 this.scoreValue = 200;
@@ -1297,7 +1300,7 @@ class Enemy {
                 this.vy = Math.sin(cigAngle) * this.speed;
                 break;
             case 'booze_enemy':
-                this.radius = 30; // enlarged
+                this.radius = 37.5; // enlarged
                 this.hp = 1;
                 this.color = '#4caf50';
                 this.scoreValue = 200;
@@ -1399,7 +1402,7 @@ class Enemy {
                 this.vy = Math.sin(spAngle) * this.speed;
                 break;
             case 'sunscreen':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 1;
                 this.color = '#ffb74d'; // Orange
                 this.scoreValue = 150;
@@ -1409,7 +1412,7 @@ class Enemy {
                 this.vy = Math.sin(ssAngle) * this.speed;
                 break;
             case 'electric_fan':
-                this.radius = 24;
+                this.radius = 30;
                 this.hp = 1;
                 this.color = '#e91e63'; // Pink (matches sunglasses frames)
                 this.scoreValue = 150;
@@ -1499,7 +1502,7 @@ class Enemy {
                 this.vy = Math.sin(waAngle) * this.speed;
                 break;
             case 'tshirt':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 1;
                 this.color = '#e040fb'; // tie-dye purple
                 this.scoreValue = 160;
@@ -1519,7 +1522,7 @@ class Enemy {
                 this.vy = Math.sin(canAngle) * this.speed;
                 break;
             case 'tie_dye':
-                this.radius = 24;
+                this.radius = 30;
                 this.hp = 1;
                 this.color = '#e040fb'; // tie-dye purple
                 this.scoreValue = 180;
@@ -1572,7 +1575,7 @@ class Enemy {
                 this.vy = Math.sin(gcAngle) * this.speed;
                 break;
             case 'sandals':
-                this.radius = 24;
+                this.radius = 30;
                 this.speed = 0.9 + currentWave * 0.04;
                 this.hp = 1;
                 this.color = '#8d6e63';
@@ -1592,7 +1595,7 @@ class Enemy {
                 this.vy = Math.sin(avAngle) * this.speed;
                 break;
             case 'oat_milk':
-                this.radius = 25;
+                this.radius = 31.25;
                 this.speed = 1.0 + currentWave * 0.04;
                 this.hp = 1;
                 this.color = '#e0f7fa';
@@ -1780,7 +1783,7 @@ class Enemy {
                 this.vy = Math.sin(tapeAngle) * this.speed;
                 break;
             case 'red_wine':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 1;
                 this.color = '#7c0a02';
                 this.scoreValue = 200;
@@ -2877,43 +2880,8 @@ class Enemy {
         }
         else if (this.type === 'vape') {
             ctx.save();
-            ctx.scale(1.1, 1.1);
             ctx.rotate(Math.sin(this.angle) * 0.15);
-
-            // Mouthpiece (black, offset to the left)
-            ctx.fillStyle = '#111111';
-            ctx.beginPath();
-            ctx.roundRect(-10, -21, 8, 7, 2);
-            ctx.fill();
-
-            // Gradient body (Lost Mary dual tone style: blue to pink)
-            const bodyGrad = ctx.createLinearGradient(-15, -14, 15, 14);
-            bodyGrad.addColorStop(0, '#00e5ff'); // bright cyan
-            bodyGrad.addColorStop(1, '#ff4081'); // bright hot pink
-            
-            ctx.fillStyle = bodyGrad;
-            ctx.strokeStyle = '#222222';
-            ctx.lineWidth = 1.8;
-            ctx.beginPath();
-            ctx.roundRect(-15, -14, 30, 28, 5); // short and wide Lost Mary style
-            ctx.fill();
-            ctx.stroke();
-
-            // Top cap cover (silver/metallic)
-            ctx.fillStyle = '#cfd8dc';
-            ctx.fillRect(-15, -14, 30, 3);
-
-            // Bottom base (silver/metallic)
-            ctx.fillStyle = '#b0bec5';
-            ctx.fillRect(-15, 11, 30, 3);
-
-            // Branding text representation
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 7px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText('LOST', 0, -2);
-            ctx.fillText('MARY', 0, 5);
-
+            drawImagePreservingAspect(vapeImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'breakfast') {
@@ -2924,7 +2892,7 @@ class Enemy {
         }
         else if (this.type === 'tshirt') {
             ctx.save();
-            ctx.scale(1.1, 1.1);
+            ctx.scale(1.375, 1.375);
             ctx.rotate(Math.sin(this.angle) * 0.12);
 
             ctx.fillStyle = '#e040fb';
@@ -3153,7 +3121,7 @@ class Enemy {
                 drawImagePreservingAspect(tieDyeImg, this.radius);
             } else {
                 // Draw vector fallback (tie-dye tshirt)
-                ctx.scale(1.1, 1.1);
+                ctx.scale(1.375, 1.375);
                 ctx.rotate(Math.sin(this.angle) * 0.12);
 
                 ctx.fillStyle = '#e040fb';
@@ -4881,7 +4849,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
