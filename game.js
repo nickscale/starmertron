@@ -1850,66 +1850,15 @@ class Enemy {
         }
 
         if (this.type === 'evil_keir') {
-            const isOuter = (this.keirLayer === 0);
-            const layerIdx = this.keirIndex !== undefined ? this.keirIndex : 0;
-            const layerCount = this.keirTotal !== undefined ? this.keirTotal : 8;
-
-            const elapsedMs = Date.now() - waveStartTime;
-            const elapsedSec = elapsedMs / 1000;
-            const speedPixelsPerSec = 130;
-            const baseOffset = elapsedSec * speedPixelsPerSec;
-            
-            let targetX, targetY;
-            
-            if (isOuter) {
-                // Outer clockwise layer (Layer 0)
-                const inset = 40;
-                const minX = 10 + inset;
-                const maxX = ARENA_WIDTH - 10 - inset;
-                const minY = ARENA_CEILING + inset;
-                const maxY = ARENA_HEIGHT - 10 - inset;
-                const w = maxX - minX;
-                const h = maxY - minY;
-                const P = 2 * (w + h);
-                
-                const s = (baseOffset + layerIdx * (P / layerCount)) % P;
-                
-                if (s < w) {
-                    targetX = minX + s; targetY = minY;
-                } else if (s < w + h) {
-                    targetX = maxX; targetY = minY + (s - w);
-                } else if (s < 2 * w + h) {
-                    targetX = maxX - (s - (w + h)); targetY = maxY;
-                } else {
-                    targetX = minX; targetY = maxY - (s - (2 * w + h));
-                }
-            } else {
-                // Inner counter-clockwise layer (Layer 1)
-                const inset = 85;
-                const minX = 10 + inset;
-                const maxX = ARENA_WIDTH - 10 - inset;
-                const minY = ARENA_CEILING + inset;
-                const maxY = ARENA_HEIGHT - 10 - inset;
-                const w = maxX - minX;
-                const h = maxY - minY;
-                const P = 2 * (w + h);
-                
-                const s = (((-baseOffset + layerIdx * (P / layerCount)) % P) + P) % P;
-                
-                if (s < w) {
-                    targetX = minX + s; targetY = minY;
-                } else if (s < w + h) {
-                    targetX = maxX; targetY = minY + (s - w);
-                } else if (s < 2 * w + h) {
-                    targetX = maxX - (s - (w + h)); targetY = maxY;
-                } else {
-                    targetX = minX; targetY = maxY - (s - (2 * w + h));
-                }
+            if (this.spawnTimer === undefined) this.spawnTimer = 0;
+            if (this.spawnTimer > 0) {
+                this.spawnTimer -= deltaTime;
+                if (this.spawnTimer < 0) this.spawnTimer = 0;
             }
-            
-            // Smoothly slide/lerp to target patrol position
-            this.x += (targetX - this.x) * 0.08;
-            this.y += (targetY - this.y) * 0.08;
+
+            const pos = getPatrolTarget(this.keirLayer, this.keirIndex, this.keirTotal, waveStartTime);
+            this.x = pos.x;
+            this.y = pos.y;
             return;
         }
 
@@ -3336,6 +3285,9 @@ class Enemy {
         }
         else if (this.type === 'evil_keir') {
             ctx.save();
+            if (this.spawnTimer !== undefined && this.spawnTimer > 0) {
+                ctx.globalAlpha = 1 - (this.spawnTimer / 1000);
+            }
             const wobble = Math.sin(Date.now() / 150) * 0.05;
             ctx.rotate(wobble);
             drawImagePreservingAspect(evilKeirImg, this.radius);
@@ -3687,22 +3639,75 @@ function startGame() {
     spawnWave();
 }
 
+function getPatrolTarget(layerNum, index, total, spawnTimeMs) {
+    const isOuter = (layerNum === 0);
+    const layerIdx = index;
+    const layerCount = total;
+
+    const elapsedMs = Date.now() - spawnTimeMs;
+    const elapsedSec = elapsedMs / 1000;
+    const speedPixelsPerSec = 130;
+    const baseOffset = elapsedSec * speedPixelsPerSec;
+    
+    let targetX, targetY;
+    
+    if (isOuter) {
+        // Outer clockwise layer (Layer 0)
+        const inset = 40;
+        const minX = 10 + inset;
+        const maxX = ARENA_WIDTH - 10 - inset;
+        const minY = ARENA_CEILING + inset;
+        const maxY = ARENA_HEIGHT - 10 - inset;
+        const w = maxX - minX;
+        const h = maxY - minY;
+        const P = 2 * (w + h);
+        
+        const s = (baseOffset + layerIdx * (P / layerCount)) % P;
+        
+        if (s < w) {
+            targetX = minX + s; targetY = minY;
+        } else if (s < w + h) {
+            targetX = maxX; targetY = minY + (s - w);
+        } else if (s < 2 * w + h) {
+            targetX = maxX - (s - (w + h)); targetY = maxY;
+        } else {
+            targetX = minX; targetY = maxY - (s - (2 * w + h));
+        }
+    } else {
+        // Inner counter-clockwise layer (Layer 1)
+        const inset = 85;
+        const minX = 10 + inset;
+        const maxX = ARENA_WIDTH - 10 - inset;
+        const minY = ARENA_CEILING + inset;
+        const maxY = ARENA_HEIGHT - 10 - inset;
+        const w = maxX - minX;
+        const h = maxY - minY;
+        const P = 2 * (w + h);
+        
+        const s = (((-baseOffset + layerIdx * (P / layerCount)) % P) + P) % P;
+        
+        if (s < w) {
+            targetX = minX + s; targetY = minY;
+        } else if (s < w + h) {
+            targetX = maxX; targetY = minY + (s - w);
+        } else if (s < 2 * w + h) {
+            targetX = maxX - (s - (w + h)); targetY = maxY;
+        } else {
+            targetX = minX; targetY = maxY - (s - (2 * w + h));
+        }
+    }
+    return { x: targetX, y: targetY };
+}
+
 function spawnKeirLayer(layerNum, count) {
     for (let i = 0; i < count; i++) {
-        let ex, ey, dist;
-        const px = player ? player.x : ARENA_WIDTH / 2;
-        const py = player ? player.y : ARENA_HEIGHT / 2;
-        const safeRadius = 180;
-        do {
-            ex = Math.random() * (ARENA_WIDTH - 80) + 40;
-            ey = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
-            dist = Math.hypot(ex - px, ey - py);
-        } while (dist < safeRadius);
-        
-        const enemy = new Enemy(ex, ey, 'evil_keir');
+        // Calculate initial target position directly to avoid glitching across
+        const pos = getPatrolTarget(layerNum, i, count, waveStartTime);
+        const enemy = new Enemy(pos.x, pos.y, 'evil_keir');
         enemy.keirLayer = layerNum;
         enemy.keirIndex = i;
         enemy.keirTotal = count;
+        enemy.spawnTimer = 1000; // 1 second of safe spawn fade-in
         enemies.push(enemy);
     }
 }
@@ -4435,6 +4440,7 @@ function collectItem(cIndex) {
         // Inflict 1 damage to every active enemy
         for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
             const enemy = enemies[eIndex];
+            if (enemy.spawnTimer !== undefined && enemy.spawnTimer > 0) continue;
             
             // Mandipede head invulnerability handling
             if (enemy.type === 'mandipede' && enemy.segmentType === 'head') {
@@ -4556,6 +4562,7 @@ function checkCollisions() {
         const bullet = bullets[bIndex];
         for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
             const enemy = enemies[eIndex];
+            if (enemy.spawnTimer !== undefined && enemy.spawnTimer > 0) continue;
             let collided = false;
             if (enemy.type === 'sewage_tank') {
                 const aspect = 450 / 209;
@@ -4647,6 +4654,7 @@ function checkCollisions() {
     if (gameState === 'PLAYING') {
         for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
             const enemy = enemies[eIndex];
+            if (enemy.spawnTimer !== undefined && enemy.spawnTimer > 0) continue;
             let collided = false;
             if (enemy.type === 'sewage_tank') {
                 const aspect = 450 / 209;
@@ -4948,7 +4956,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.7', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
