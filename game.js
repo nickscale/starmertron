@@ -326,6 +326,22 @@ phoneboxImg.src = 'phonebox.png';
 const blackcabImg = new Image();
 blackcabImg.src = 'blackcab.png';
 
+// Wave 16 "DON'T MENTION EUROPE" sprites preloading
+const ursulaImg = new Image();
+ursulaImg.src = 'ursula.png';
+
+const bluePassportImg = new Image();
+bluePassportImg.src = 'blue_passport.png';
+
+const euroStarImg = new Image();
+euroStarImg.src = 'euro_star.png';
+
+const redTapeImg = new Image();
+redTapeImg.src = 'red_tape.png';
+
+const redWineImg = new Image();
+redWineImg.src = 'red_wine.png';
+
 function drawImagePreservingAspect(img, radius, scale = 1.0) {
     if (!img || !img.complete || img.naturalWidth === 0) return;
     const aspect = img.naturalWidth / img.naturalHeight;
@@ -1722,6 +1738,57 @@ class Enemy {
                 this.vx = Math.cos(blackcabAngle) * this.speed;
                 this.vy = Math.sin(blackcabAngle) * this.speed;
                 break;
+            case 'ursula_miniboss':
+                this.radius = 30;
+                this.hp = 10;
+                this.color = '#003399';
+                this.scoreValue = 500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const ursulaAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ursulaAngle) * this.speed;
+                this.vy = Math.sin(ursulaAngle) * this.speed;
+                break;
+            case 'blue_passport':
+                this.radius = 24;
+                this.hp = 1;
+                this.color = '#0d47a1';
+                this.scoreValue = 150;
+                this.speed = 1.2 + currentWave * 0.03;
+                const passportAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(passportAngle) * this.speed;
+                this.vy = Math.sin(passportAngle) * this.speed;
+                break;
+            case 'euro_star':
+                this.radius = 22;
+                this.hp = 1;
+                this.color = '#ffd700';
+                this.scoreValue = 150;
+                this.speed = 1.4 + currentWave * 0.04;
+                const starAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(starAngle) * this.speed;
+                this.vy = Math.sin(starAngle) * this.speed;
+                break;
+            case 'red_tape':
+                this.radius = 22;
+                this.hp = 2;
+                this.color = '#d32f2f';
+                this.scoreValue = 200;
+                this.speed = 1.1 + currentWave * 0.03;
+                const tapeAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(tapeAngle) * this.speed;
+                this.vy = Math.sin(tapeAngle) * this.speed;
+                break;
+            case 'red_wine':
+                this.radius = 22;
+                this.hp = 2;
+                this.color = '#7c0a02';
+                this.scoreValue = 200;
+                this.speed = 1.2 + currentWave * 0.03;
+                const wineAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(wineAngle) * this.speed;
+                this.vy = Math.sin(wineAngle) * this.speed;
+                break;
             case 'tooth':
                 this.radius = 10;
                 this.hp = 1;
@@ -2128,7 +2195,7 @@ class Enemy {
                 enemies = enemies.filter(e => e !== this);
             }
         }
-        else if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(this.type)) {
+        else if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -2143,7 +2210,8 @@ class Enemy {
                     'kemi_miniboss': '#0087dc',
                     'farage_miniboss': '#00d2c4',
                     'ed_miniboss': '#ffd700',
-                    'sadiq_miniboss': '#ff9800'
+                    'sadiq_miniboss': '#ff9800',
+                    'ursula_miniboss': '#003399'
                 };
                 particles.push(new Particle(
                     this.x + (Math.random() - 0.5) * 15,
@@ -2159,7 +2227,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab', 'blue_passport', 'euro_star', 'red_tape', 'red_wine'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -2206,7 +2274,7 @@ class Enemy {
         ctx.lineWidth = 2.5;
 
         // Pulsating dashed gold ring around mini-bosses
-        if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(this.type)) {
+        if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss'].includes(this.type)) {
             ctx.save();
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 3;
@@ -3252,6 +3320,37 @@ class Enemy {
             drawImagePreservingAspect(blackcabImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'ursula_miniboss') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(ursulaImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'blue_passport') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(bluePassportImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'euro_star') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(euroStarImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'red_tape') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(redTapeImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'red_wine') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(redWineImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'tooth') {
             ctx.fillStyle = '#ffffff';
             ctx.strokeStyle = '#e0e0e0';
@@ -3591,7 +3690,7 @@ function getWaveName(waveNum) {
     if (layoutWave === 13) return "REFORM BOSS";
     if (layoutWave === 14) return "GREEN BOSS";
     if (layoutWave === 15) return "LONDONCENTRIC";
-    if (layoutWave === 16) return "EURO ZONE";
+    if (layoutWave === 16) return "DON'T MENTION EUROPE";
     return "";
 }
 
@@ -3909,9 +4008,12 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('blackcab');
     }
     else if (layoutWave === 16) {
-        // Wave 16 - Euro Zone (shifted from wave 15) - Euro chompers € symbols (Labour themed) + newspapers
-        for (let i = 0; i < 6; i++) spawnEnemy('euro_chomper');
-        for (let i = 0; i < 6; i++) spawnEnemy('newspaper');
+        // Wave 16 - Don't Mention Europe - Ursula miniboss + blue passport, euro star, red tape, red wine
+        spawnEnemy('ursula_miniboss');
+        for (let i = 0; i < 4; i++) spawnEnemy('blue_passport');
+        for (let i = 0; i < 4; i++) spawnEnemy('euro_star');
+        for (let i = 0; i < 4; i++) spawnEnemy('red_tape');
+        for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
     }
 
     else {
@@ -4492,7 +4594,7 @@ function checkCollisions() {
              if (collided) {
                 // Enemy dies!
                 // Bosses are not killed by collision; Starmer loses life but boss remains
-                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
                 if (isBoss) {
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
@@ -4778,7 +4880,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.9.9', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.0', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
