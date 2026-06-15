@@ -1771,7 +1771,7 @@ class Enemy {
                 break;
             case 'red_tape':
                 this.radius = 22;
-                this.hp = 2;
+                this.hp = 1;
                 this.color = '#d32f2f';
                 this.scoreValue = 200;
                 this.speed = 1.1 + currentWave * 0.03;
@@ -1781,7 +1781,7 @@ class Enemy {
                 break;
             case 'red_wine':
                 this.radius = 22;
-                this.hp = 2;
+                this.hp = 1;
                 this.color = '#7c0a02';
                 this.scoreValue = 200;
                 this.speed = 1.2 + currentWave * 0.03;
@@ -3734,7 +3734,7 @@ function spawnWave() {
         spawnEnemy('kemi_miniboss');
     }
     else if (layoutWave === 2) {
-        // Wave 2 - "Reform Booze Up" - Reform arrows + cigarettes + breakfast + booze bottles + vapes + tabloid + banknotes + English flags + Nigel Farage mini boss
+        // Wave 2 - "Reform Booze Up" - Reform arrows + cigarettes + breakfast + booze bottles + vapes + tabloid + banknotes + English flags + red wine + Nigel Farage mini boss
         for (let i = 0; i < 6; i++) spawnEnemy('reform');
         for (let i = 0; i < 3; i++) spawnEnemy('cigarette');
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
@@ -3743,6 +3743,7 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('tabloid');
         for (let i = 0; i < 3; i++) spawnEnemy('banknote');
         for (let i = 0; i < 3; i++) spawnEnemy('english_flag');
+        for (let i = 0; i < 3; i++) spawnEnemy('red_wine');
         spawnEnemy('farage_miniboss');
     }
     else if (layoutWave === 3) {
@@ -4880,7 +4881,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.0', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.1', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
