@@ -850,7 +850,7 @@ class Bullet {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 15 : (type === 'diesel_smoke' ? 14 : (['gravy', 'lager', 'chips'].includes(type) ? 14 : 4))));
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 15 : (type === 'diesel_smoke' ? 14 : (['gravy', 'lager', 'chips'].includes(type) ? 21 : 4))));
         this.origin = origin;
         this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke' or 'gravy' or 'lager' or 'chips'
         this.bounceCount = 0;
@@ -900,6 +900,39 @@ class Bullet {
             }
 
             if (this.bounceCount > 4) {
+                this.x = -100; // Force cleanup out of bounds
+            }
+        }
+
+        // Bouncy check for boss projectiles ('gravy', 'lager', 'chips')
+        if (['gravy', 'lager', 'chips'].includes(this.type)) {
+            // Left boundary
+            if (this.x - this.radius <= 15) {
+                this.x = 15 + this.radius + 1;
+                this.vx = Math.abs(this.vx);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+            // Right boundary
+            else if (this.x + this.radius >= ARENA_WIDTH - 15) {
+                this.x = ARENA_WIDTH - 15 - this.radius - 1;
+                this.vx = -Math.abs(this.vx);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+
+            // Top boundary
+            if (this.y - this.radius <= ARENA_CEILING + 5) {
+                this.y = ARENA_CEILING + 5 + this.radius + 1;
+                this.vy = Math.abs(this.vy);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+            // Bottom boundary
+            else if (this.y + this.radius >= ARENA_HEIGHT - 15) {
+                this.y = ARENA_HEIGHT - 15 - this.radius - 1;
+                this.vy = -Math.abs(this.vy);
+                this.bounceCount = (this.bounceCount || 0) + 1;
+            }
+
+            if (this.bounceCount > 3) {
                 this.x = -100; // Force cleanup out of bounds
             }
         }
@@ -1719,7 +1752,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'lime_bike':
-                this.radius = 30;
+                this.radius = 45;
                 this.hp = 1;
                 this.color = '#00ff00';
                 this.scoreValue = 150;
@@ -1729,7 +1762,7 @@ class Enemy {
                 this.vy = Math.sin(limeBikeAngle) * this.speed;
                 break;
             case 'police_helmet':
-                this.radius = 27.5;
+                this.radius = 41.25;
                 this.hp = 2;
                 this.color = '#0d47a1';
                 this.scoreValue = 200;
@@ -1739,7 +1772,7 @@ class Enemy {
                 this.vy = Math.sin(policeHelmetAngle) * this.speed;
                 break;
             case 'punk':
-                this.radius = 27.5;
+                this.radius = 41.25;
                 this.hp = 1;
                 this.color = '#e91e63';
                 this.scoreValue = 150;
@@ -1749,7 +1782,7 @@ class Enemy {
                 this.vy = Math.sin(punkAngle) * this.speed;
                 break;
             case 'speed_camera':
-                this.radius = 25;
+                this.radius = 37.5;
                 this.hp = 2;
                 this.color = '#ffd54f';
                 this.scoreValue = 250;
@@ -1759,7 +1792,7 @@ class Enemy {
                 this.vy = Math.sin(speedCameraAngle) * this.speed;
                 break;
             case 'phonebox':
-                this.radius = 27.5;
+                this.radius = 41.25;
                 this.hp = 2;
                 this.color = '#d32f2f';
                 this.scoreValue = 200;
@@ -1769,7 +1802,7 @@ class Enemy {
                 this.vy = Math.sin(phoneboxAngle) * this.speed;
                 break;
             case 'blackcab':
-                this.radius = 32.5;
+                this.radius = 48.75;
                 this.hp = 3;
                 this.color = '#212121';
                 this.scoreValue = 250;
@@ -1820,7 +1853,7 @@ class Enemy {
                 this.vy = Math.sin(tapeAngle) * this.speed;
                 break;
             case 'red_wine':
-                this.radius = 27.5;
+                this.radius = 41.25;
                 this.hp = 1;
                 this.color = '#7c0a02';
                 this.scoreValue = 200;
@@ -1847,33 +1880,33 @@ class Enemy {
                 this.angleOffset = 0;
                 break;
             case 'crowned_andy':
-                this.radius = 50;
+                this.radius = 75;
                 this.hp = 30;
                 this.color = '#e53935';
                 this.scoreValue = 1500;
-                this.speed = 0.5;
+                this.speed = 1.5;
                 this.fireTimer = 0;
                 const caAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(caAngle) * this.speed;
                 this.vy = Math.sin(caAngle) * this.speed;
                 break;
             case 'andy_no_crown':
-                this.radius = 40;
+                this.radius = 90;
                 this.hp = 10;
                 this.color = '#e53935';
                 this.scoreValue = 500;
-                this.speed = 0.7;
+                this.speed = 2.2;
                 this.fireTimer = 0;
                 const ancAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(ancAngle) * this.speed;
                 this.vy = Math.sin(ancAngle) * this.speed;
                 break;
             case 'crown':
-                this.radius = 35;
+                this.radius = 53;
                 this.hp = 10;
                 this.color = '#ffd700';
                 this.scoreValue = 500;
-                this.speed = 0.9;
+                this.speed = 2.8;
                 this.fireTimer = 0;
                 const crAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(crAngle) * this.speed;
@@ -1890,7 +1923,7 @@ class Enemy {
     update(deltaTime) {
         this.angle += 0.03;
 
-        const layoutWave = 1 + ((currentWave - 1) % 15);
+        const layoutWave = 1 + ((currentWave - 1) % 18);
 
         // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
         if (layoutWave === 10) {
@@ -2291,17 +2324,21 @@ class Enemy {
             this.fireTimer += deltaTime;
             if (this.fireTimer > 2000) {
                 this.fireTimer = 0;
-                const types = ['gravy', 'lager', 'chips'];
-                const projType = types[Math.floor(Math.random() * types.length)];
                 if (player) {
                     const dx = player.x - this.x;
                     const dy = player.y - this.y;
                     const dist = Math.hypot(dx, dy);
                     if (dist > 5) {
                         const bulletSpeed = (2.4 + currentWave * 0.04) * 1.6;
-                        const vx = (dx / dist) * bulletSpeed;
-                        const vy = (dy / dist) * bulletSpeed;
-                        enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', projType));
+                        const baseAngle = Math.atan2(dy, dx);
+                        const types = ['gravy', 'lager', 'chips'];
+                        const angles = [baseAngle - 0.22, baseAngle, baseAngle + 0.22];
+                        for (let idx = 0; idx < 3; idx++) {
+                            const angle = angles[idx];
+                            const vx = Math.cos(angle) * bulletSpeed;
+                            const vy = Math.sin(angle) * bulletSpeed;
+                            enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', types[idx]));
+                        }
                     }
                 }
             }
@@ -4656,10 +4693,10 @@ function collectItem(cIndex) {
                     
                     const andyPart = new Enemy(enemy.x - 15, enemy.y, 'andy_no_crown');
                     const crownPart = new Enemy(enemy.x + 15, enemy.y, 'crown');
-                    andyPart.vx = -1.0;
-                    andyPart.vy = 0.5;
-                    crownPart.vx = 1.0;
-                    crownPart.vy = -0.5;
+                    andyPart.vx = -andyPart.speed;
+                    andyPart.vy = andyPart.speed * 0.5;
+                    crownPart.vx = crownPart.speed;
+                    crownPart.vy = -crownPart.speed * 0.5;
                     enemies.push(andyPart, crownPart);
                 } else {
                     enemies.splice(eIndex, 1);
@@ -4721,16 +4758,16 @@ function checkCollisions() {
         const pBullet = bullets[bIndex];
         for (let ebIndex = enemyBullets.length - 1; ebIndex >= 0; ebIndex--) {
             const eBullet = enemyBullets[ebIndex];
-            if (eBullet.type === 'brown_peanut' || eBullet.type === 'diesel_smoke') {
+            if (eBullet.type === 'brown_peanut' || eBullet.type === 'diesel_smoke' || eBullet.type === 'gravy' || eBullet.type === 'lager' || eBullet.type === 'chips') {
                 const dist = Math.hypot(pBullet.x - eBullet.x, pBullet.y - eBullet.y);
                 if (dist < pBullet.radius + eBullet.radius) {
                     bullets.splice(bIndex, 1);
                     enemyBullets.splice(ebIndex, 1);
-                    const pColor = eBullet.type === 'brown_peanut' ? '#8b5a2b' : '#505050';
+                    const pColor = eBullet.type === 'brown_peanut' ? '#8b5a2b' : eBullet.type === 'gravy' ? '#6b3a1f' : eBullet.type === 'lager' ? '#daa520' : eBullet.type === 'chips' ? '#f5d442' : '#505050';
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(eBullet.x, eBullet.y, pColor));
                     }
-                    window.audio.playProjectileDestroy();
+                    window.audio.playExplosion();
                     break;
                 }
             }
@@ -4809,10 +4846,10 @@ function checkCollisions() {
                         
                         const andyPart = new Enemy(enemy.x - 15, enemy.y, 'andy_no_crown');
                         const crownPart = new Enemy(enemy.x + 15, enemy.y, 'crown');
-                        andyPart.vx = -1.0;
-                        andyPart.vy = 0.5;
-                        crownPart.vx = 1.0;
-                        crownPart.vy = -0.5;
+                        andyPart.vx = -andyPart.speed;
+                        andyPart.vy = andyPart.speed * 0.5;
+                        crownPart.vx = crownPart.speed;
+                        crownPart.vy = -crownPart.speed * 0.5;
                         enemies.push(andyPart, crownPart);
                     } else {
                         enemies.splice(eIndex, 1);
