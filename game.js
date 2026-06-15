@@ -1853,32 +1853,69 @@ class Enemy {
             const activeKeirs = enemies.filter(e => e.type === 'evil_keir');
             const idx = activeKeirs.indexOf(this);
             if (idx !== -1) {
-                // Spacing rings: ring 0 has 5 enemies, ring 1 has 10 enemies
-                let ring = 0;
-                let indexInRing = idx;
-                let countInRing = 5;
-                if (idx >= 5) {
-                    ring = 1;
-                    indexInRing = idx - 5;
-                    countInRing = 10;
-                }
+                // Determine layers
+                const isOuter = (idx % 2 === 0);
                 
                 const elapsedMs = Date.now() - waveStartTime;
-                const baseDist = Math.max(80, 300 - elapsedMs * 0.006);
+                const elapsedSec = elapsedMs / 1000;
+                const speedPixelsPerSec = 130;
+                const baseOffset = elapsedSec * speedPixelsPerSec;
                 
-                let dist = baseDist;
-                let rotation = elapsedMs * 0.0008;
-                if (ring === 1) {
-                    dist = baseDist + 75;
-                    rotation = -elapsedMs * 0.0005; // opposite direction rotation
+                let targetX, targetY;
+                
+                if (isOuter) {
+                    // Outer clockwise layer (Layer 0)
+                    const inset = 40;
+                    const minX = 10 + inset;
+                    const maxX = ARENA_WIDTH - 10 - inset;
+                    const minY = ARENA_CEILING + inset;
+                    const maxY = ARENA_HEIGHT - 10 - inset;
+                    const w = maxX - minX;
+                    const h = maxY - minY;
+                    const P = 2 * (w + h);
+                    
+                    const outerCount = Math.ceil(activeKeirs.length / 2);
+                    const layerIdx = idx / 2;
+                    const s = (baseOffset + layerIdx * (P / outerCount)) % P;
+                    
+                    if (s < w) {
+                        targetX = minX + s; targetY = minY;
+                    } else if (s < w + h) {
+                        targetX = maxX; targetY = minY + (s - w);
+                    } else if (s < 2 * w + h) {
+                        targetX = maxX - (s - (w + h)); targetY = maxY;
+                    } else {
+                        targetX = minX; targetY = maxY - (s - (2 * w + h));
+                    }
+                } else {
+                    // Inner counter-clockwise layer (Layer 1)
+                    const inset = 85;
+                    const minX = 10 + inset;
+                    const maxX = ARENA_WIDTH - 10 - inset;
+                    const minY = ARENA_CEILING + inset;
+                    const maxY = ARENA_HEIGHT - 10 - inset;
+                    const w = maxX - minX;
+                    const h = maxY - minY;
+                    const P = 2 * (w + h);
+                    
+                    const innerCount = Math.floor(activeKeirs.length / 2);
+                    const layerIdx = (idx - 1) / 2;
+                    const s = (((-baseOffset + layerIdx * (P / innerCount)) % P) + P) % P;
+                    
+                    if (s < w) {
+                        targetX = minX + s; targetY = minY;
+                    } else if (s < w + h) {
+                        targetX = maxX; targetY = minY + (s - w);
+                    } else if (s < 2 * w + h) {
+                        targetX = maxX - (s - (w + h)); targetY = maxY;
+                    } else {
+                        targetX = minX; targetY = maxY - (s - (2 * w + h));
+                    }
                 }
                 
-                const angle = rotation + (indexInRing * Math.PI * 2) / countInRing;
-                const targetX = player.x + Math.cos(angle) * dist;
-                const targetY = player.y + Math.sin(angle) * dist;
-                
-                this.x += (targetX - this.x) * 0.07;
-                this.y += (targetY - this.y) * 0.07;
+                // Smoothly slide/lerp to target patrol position
+                this.x += (targetX - this.x) * 0.08;
+                this.y += (targetY - this.y) * 0.08;
             }
             return;
         }
@@ -4899,7 +4936,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.6', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
