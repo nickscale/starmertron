@@ -634,8 +634,9 @@ class Player {
             dy *= 0.7071;
         }
 
-        this.x += dx * this.speed;
-        this.y += dy * this.speed;
+        const moveSpeed = this.speed + (currentWave - 1) * 0.05;
+        this.x += dx * moveSpeed;
+        this.y += dy * moveSpeed;
 
         this.x = Math.max(this.radius + 15, Math.min(ARENA_WIDTH - this.radius - 15, this.x));
         this.y = Math.max(this.radius + ARENA_CEILING, Math.min(ARENA_HEIGHT - this.radius - 15, this.y));
@@ -1052,7 +1053,7 @@ class Enemy {
                 this.vy = 0;
                 break;
             case 'green': // Green party sunflower globe
-                this.radius = 24.2;
+                this.radius = 30.25;
                 this.speed = 0.35; // Very slowly traverse
                 this.hp = 1;
                 this.color = '#6ab023';
@@ -1382,7 +1383,7 @@ class Enemy {
                 this.vy = Math.sin(ppAngle) * this.speed;
                 break;
             case 'tote_bag':
-                this.radius = 24;
+                this.radius = 30;
                 this.hp = 1;
                 this.color = '#81c784'; // Light green
                 this.scoreValue = 150;
@@ -1392,7 +1393,7 @@ class Enemy {
                 this.vy = Math.sin(tbagAngle) * this.speed;
                 break;
             case 'solar_panel':
-                this.radius = 25;
+                this.radius = 31.25;
                 this.hp = 1;
                 this.color = '#1565c0'; // Dark blue
                 this.scoreValue = 180;
@@ -1627,7 +1628,7 @@ class Enemy {
                 this.vy = Math.sin(lwbAngle) * this.speed;
                 break;
             case 'zack_miniboss':
-                this.radius = 30;
+                this.radius = 37.5;
                 this.hp = 10;
                 this.color = '#6ab023';
                 this.scoreValue = 500;
@@ -2263,7 +2264,7 @@ class Enemy {
         const dist = Math.hypot(dx, dy);
         
         if (dist > 5) {
-            const bulletSpeed = (2.4 + currentWave * 0.1) * 1.6;
+            const bulletSpeed = (2.4 + currentWave * 0.04) * 1.6;
             const vx = (dx / dist) * bulletSpeed;
             const vy = (dy / dist) * bulletSpeed;
             enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
@@ -2892,48 +2893,8 @@ class Enemy {
         }
         else if (this.type === 'tshirt') {
             ctx.save();
-            ctx.scale(1.375, 1.375);
-            ctx.rotate(Math.sin(this.angle) * 0.12);
-
-            ctx.fillStyle = '#e040fb';
-            ctx.strokeStyle = '#aa00ff';
-            ctx.lineWidth = 2;
-            
-            ctx.beginPath();
-            ctx.moveTo(-10, -18);
-            ctx.lineTo(-20, -12);
-            ctx.lineTo(-15, -4);
-            ctx.lineTo(-10, -6);
-            ctx.lineTo(-10, 18);
-            ctx.lineTo(10, 18);
-            ctx.lineTo(10, -6);
-            ctx.lineTo(15, -4);
-            ctx.lineTo(20, -12);
-            ctx.lineTo(10, -18);
-            ctx.quadraticCurveTo(0, -14, -10, -18);
-            ctx.closePath();
-            ctx.fill();
-            ctx.stroke();
-
-            // Tie-dye spiral
-            ctx.save();
-            ctx.clip();
-            const colors = ['#ff1744', '#ffea00', '#00e676', '#00b0ff', '#ff3d00'];
-            for (let r = 5; r < 35; r += 6) {
-                ctx.strokeStyle = colors[Math.floor(r / 6) % colors.length];
-                ctx.lineWidth = 3.5;
-                ctx.beginPath();
-                ctx.arc(0, 0, r, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-            ctx.restore();
-            
-            ctx.strokeStyle = '#aa00ff';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.arc(0, -18, 10, 0.25 * Math.PI, 0.75 * Math.PI);
-            ctx.stroke();
-
+            ctx.rotate(Math.sin(this.angle) * 0.15);
+            drawImagePreservingAspect(tieDyeImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'reform_mercedes') {
@@ -4849,7 +4810,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.2', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.3', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
