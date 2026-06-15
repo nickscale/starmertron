@@ -60,7 +60,7 @@ if (isFirstTime || isHard) {
 let hiScore = getHighScoreCookie();
 let lives = 10; // Start with 10 lives
 let currentWave = 1;
-let evilKeirSpawnedCount = 0;
+let destroyedLayerCount = 0;
 let waveStartTime = 0;
 let waveTransitionTimer = 0;
 let waveCompleteDelayTimer = 0;
@@ -1850,73 +1850,66 @@ class Enemy {
         }
 
         if (this.type === 'evil_keir') {
-            const activeKeirs = enemies.filter(e => e.type === 'evil_keir');
-            const idx = activeKeirs.indexOf(this);
-            if (idx !== -1) {
-                // Determine layers
-                const isOuter = (idx % 2 === 0);
+            const isOuter = (this.keirLayer === 0);
+            const layerIdx = this.keirIndex !== undefined ? this.keirIndex : 0;
+            const layerCount = this.keirTotal !== undefined ? this.keirTotal : 8;
+
+            const elapsedMs = Date.now() - waveStartTime;
+            const elapsedSec = elapsedMs / 1000;
+            const speedPixelsPerSec = 130;
+            const baseOffset = elapsedSec * speedPixelsPerSec;
+            
+            let targetX, targetY;
+            
+            if (isOuter) {
+                // Outer clockwise layer (Layer 0)
+                const inset = 40;
+                const minX = 10 + inset;
+                const maxX = ARENA_WIDTH - 10 - inset;
+                const minY = ARENA_CEILING + inset;
+                const maxY = ARENA_HEIGHT - 10 - inset;
+                const w = maxX - minX;
+                const h = maxY - minY;
+                const P = 2 * (w + h);
                 
-                const elapsedMs = Date.now() - waveStartTime;
-                const elapsedSec = elapsedMs / 1000;
-                const speedPixelsPerSec = 130;
-                const baseOffset = elapsedSec * speedPixelsPerSec;
+                const s = (baseOffset + layerIdx * (P / layerCount)) % P;
                 
-                let targetX, targetY;
-                
-                if (isOuter) {
-                    // Outer clockwise layer (Layer 0)
-                    const inset = 40;
-                    const minX = 10 + inset;
-                    const maxX = ARENA_WIDTH - 10 - inset;
-                    const minY = ARENA_CEILING + inset;
-                    const maxY = ARENA_HEIGHT - 10 - inset;
-                    const w = maxX - minX;
-                    const h = maxY - minY;
-                    const P = 2 * (w + h);
-                    
-                    const outerCount = Math.ceil(activeKeirs.length / 2);
-                    const layerIdx = idx / 2;
-                    const s = (baseOffset + layerIdx * (P / outerCount)) % P;
-                    
-                    if (s < w) {
-                        targetX = minX + s; targetY = minY;
-                    } else if (s < w + h) {
-                        targetX = maxX; targetY = minY + (s - w);
-                    } else if (s < 2 * w + h) {
-                        targetX = maxX - (s - (w + h)); targetY = maxY;
-                    } else {
-                        targetX = minX; targetY = maxY - (s - (2 * w + h));
-                    }
+                if (s < w) {
+                    targetX = minX + s; targetY = minY;
+                } else if (s < w + h) {
+                    targetX = maxX; targetY = minY + (s - w);
+                } else if (s < 2 * w + h) {
+                    targetX = maxX - (s - (w + h)); targetY = maxY;
                 } else {
-                    // Inner counter-clockwise layer (Layer 1)
-                    const inset = 85;
-                    const minX = 10 + inset;
-                    const maxX = ARENA_WIDTH - 10 - inset;
-                    const minY = ARENA_CEILING + inset;
-                    const maxY = ARENA_HEIGHT - 10 - inset;
-                    const w = maxX - minX;
-                    const h = maxY - minY;
-                    const P = 2 * (w + h);
-                    
-                    const innerCount = Math.floor(activeKeirs.length / 2);
-                    const layerIdx = (idx - 1) / 2;
-                    const s = (((-baseOffset + layerIdx * (P / innerCount)) % P) + P) % P;
-                    
-                    if (s < w) {
-                        targetX = minX + s; targetY = minY;
-                    } else if (s < w + h) {
-                        targetX = maxX; targetY = minY + (s - w);
-                    } else if (s < 2 * w + h) {
-                        targetX = maxX - (s - (w + h)); targetY = maxY;
-                    } else {
-                        targetX = minX; targetY = maxY - (s - (2 * w + h));
-                    }
+                    targetX = minX; targetY = maxY - (s - (2 * w + h));
                 }
+            } else {
+                // Inner counter-clockwise layer (Layer 1)
+                const inset = 85;
+                const minX = 10 + inset;
+                const maxX = ARENA_WIDTH - 10 - inset;
+                const minY = ARENA_CEILING + inset;
+                const maxY = ARENA_HEIGHT - 10 - inset;
+                const w = maxX - minX;
+                const h = maxY - minY;
+                const P = 2 * (w + h);
                 
-                // Smoothly slide/lerp to target patrol position
-                this.x += (targetX - this.x) * 0.08;
-                this.y += (targetY - this.y) * 0.08;
+                const s = (((-baseOffset + layerIdx * (P / layerCount)) % P) + P) % P;
+                
+                if (s < w) {
+                    targetX = minX + s; targetY = minY;
+                } else if (s < w + h) {
+                    targetX = maxX; targetY = minY + (s - w);
+                } else if (s < 2 * w + h) {
+                    targetX = maxX - (s - (w + h)); targetY = maxY;
+                } else {
+                    targetX = minX; targetY = maxY - (s - (2 * w + h));
+                }
             }
+            
+            // Smoothly slide/lerp to target patrol position
+            this.x += (targetX - this.x) * 0.08;
+            this.y += (targetY - this.y) * 0.08;
             return;
         }
 
@@ -3694,6 +3687,26 @@ function startGame() {
     spawnWave();
 }
 
+function spawnKeirLayer(layerNum, count) {
+    for (let i = 0; i < count; i++) {
+        let ex, ey, dist;
+        const px = player ? player.x : ARENA_WIDTH / 2;
+        const py = player ? player.y : ARENA_HEIGHT / 2;
+        const safeRadius = 180;
+        do {
+            ex = Math.random() * (ARENA_WIDTH - 80) + 40;
+            ey = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
+            dist = Math.hypot(ex - px, ey - py);
+        } while (dist < safeRadius);
+        
+        const enemy = new Enemy(ex, ey, 'evil_keir');
+        enemy.keirLayer = layerNum;
+        enemy.keirIndex = i;
+        enemy.keirTotal = count;
+        enemies.push(enemy);
+    }
+}
+
 function getWaveName(waveNum) {
     const layoutWave = 1 + ((waveNum - 1) % 17);
     if (layoutWave === 1) return "TORY COLLAPSE";
@@ -4040,12 +4053,10 @@ function spawnWave() {
     }
     else if (layoutWave === 17) {
         // Wave 17 - Spiral of Self-destruction - Evil Keir spiral wave
-        evilKeirSpawnedCount = 0;
+        destroyedLayerCount = 0;
         waveStartTime = Date.now();
-        for (let i = 0; i < 15; i++) {
-            spawnEnemy('evil_keir');
-            evilKeirSpawnedCount++;
-        }
+        spawnKeirLayer(0, 8);
+        spawnKeirLayer(1, 8);
     }
 
     else {
@@ -4328,22 +4339,23 @@ function updateGame(deltaTime) {
     if (gameState === 'PLAYING') {
         const layoutWave = 1 + ((currentWave - 1) % 17);
         if (layoutWave === 17) {
-            const activeKeirCount = enemies.filter(e => e.type === 'evil_keir').length;
-            if (activeKeirCount < 15 && evilKeirSpawnedCount < 50) {
-                const numNeeded = Math.min(15 - activeKeirCount, 50 - evilKeirSpawnedCount);
-                for (let i = 0; i < numNeeded; i++) {
-                    let ex, ey, dist;
-                    const px = player ? player.x : ARENA_WIDTH / 2;
-                    const py = player ? player.y : ARENA_HEIGHT / 2;
-                    const safeRadius = 180;
-                    do {
-                        ex = Math.random() * (ARENA_WIDTH - 80) + 40;
-                        ey = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
-                        dist = Math.hypot(ex - px, ey - py);
-                    } while (dist < safeRadius);
-                    
-                    enemies.push(new Enemy(ex, ey, 'evil_keir'));
-                    evilKeirSpawnedCount++;
+            const activeOuterCount = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
+            const activeInnerCount = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
+            
+            if (destroyedLayerCount < 5) {
+                if (activeOuterCount === 0) {
+                    destroyedLayerCount++;
+                    if (destroyedLayerCount < 5) {
+                        spawnKeirLayer(0, 8);
+                        showNotification("OUTER LAYER RESPAWNED!");
+                    }
+                }
+                if (activeInnerCount === 0) {
+                    destroyedLayerCount++;
+                    if (destroyedLayerCount < 5) {
+                        spawnKeirLayer(1, 8);
+                        showNotification("INNER LAYER RESPAWNED!");
+                    }
                 }
             }
         }
@@ -4936,7 +4948,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.6', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.7', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
