@@ -1853,13 +1853,30 @@ class Enemy {
             const activeKeirs = enemies.filter(e => e.type === 'evil_keir');
             const idx = activeKeirs.indexOf(this);
             if (idx !== -1) {
-                const spiralRotation = (Date.now() - waveStartTime) * 0.0006;
+                // Spacing rings: ring 0 has 5 enemies, ring 1 has 10 enemies
+                let ring = 0;
+                let indexInRing = idx;
+                let countInRing = 5;
+                if (idx >= 5) {
+                    ring = 1;
+                    indexInRing = idx - 5;
+                    countInRing = 10;
+                }
+                
                 const elapsedMs = Date.now() - waveStartTime;
-                const baseDist = Math.max(80, 320 - elapsedMs * 0.006);
-                const angle = spiralRotation + (idx * Math.PI * 2) / 10;
-                const dist = baseDist + idx * 10;
+                const baseDist = Math.max(80, 300 - elapsedMs * 0.006);
+                
+                let dist = baseDist;
+                let rotation = elapsedMs * 0.0008;
+                if (ring === 1) {
+                    dist = baseDist + 75;
+                    rotation = -elapsedMs * 0.0005; // opposite direction rotation
+                }
+                
+                const angle = rotation + (indexInRing * Math.PI * 2) / countInRing;
                 const targetX = player.x + Math.cos(angle) * dist;
                 const targetY = player.y + Math.sin(angle) * dist;
+                
                 this.x += (targetX - this.x) * 0.07;
                 this.y += (targetY - this.y) * 0.07;
             }
@@ -4882,7 +4899,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.4', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.5', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
