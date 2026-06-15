@@ -350,6 +350,25 @@ redTapeImg.src = 'red_tape.png';
 const redWineImg = new Image();
 redWineImg.src = 'red_wine.png';
 
+// Wave 18 "THE KING IN THE NORTH" sprites preloading
+const andyCrownedImg = new Image();
+andyCrownedImg.src = 'andy_crowned.png';
+
+const andyImg = new Image();
+andyImg.src = 'andy.png';
+
+const crownImg = new Image();
+crownImg.src = 'crown.png';
+
+const gravyImg = new Image();
+gravyImg.src = 'gravy.png';
+
+const lagerImg = new Image();
+lagerImg.src = 'lager.png';
+
+const chipsImg = new Image();
+chipsImg.src = 'chips.png';
+
 function drawImagePreservingAspect(img, radius, scale = 1.0) {
     if (!img || !img.complete || img.naturalWidth === 0) return;
     const aspect = img.naturalWidth / img.naturalHeight;
@@ -831,9 +850,9 @@ class Bullet {
         this.y = y;
         this.vx = vx;
         this.vy = vy;
-        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 15 : (type === 'diesel_smoke' ? 14 : 4)));
+        this.radius = type === 'dropping' ? 6 : (type === 'brown_lump' ? 9 : (type === 'brown_peanut' ? 15 : (type === 'diesel_smoke' ? 14 : (['gravy', 'lager', 'chips'].includes(type) ? 14 : 4))));
         this.origin = origin;
-        this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke'
+        this.type = type; // 'laser' or 'dropping' or 'brown_lump' or 'brown_peanut' or 'silver_coin' or 'diesel_smoke' or 'gravy' or 'lager' or 'chips'
         this.bounceCount = 0;
     }
 
@@ -946,6 +965,18 @@ class Bullet {
             ctx.arc(this.x + r * 0.2, this.y + r * 0.3, r * 0.6, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
+        } else if (this.type === 'gravy') {
+            ctx.translate(this.x, this.y);
+            ctx.rotate(Date.now() / 200);
+            drawImagePreservingAspect(gravyImg, this.radius);
+        } else if (this.type === 'lager') {
+            ctx.translate(this.x, this.y);
+            ctx.rotate(Date.now() / 150);
+            drawImagePreservingAspect(lagerImg, this.radius);
+        } else if (this.type === 'chips') {
+            ctx.translate(this.x, this.y);
+            ctx.rotate(Date.now() / 250);
+            drawImagePreservingAspect(chipsImg, this.radius);
         } else {
             // High speed glowing laser lines
             ctx.beginPath();
@@ -1815,6 +1846,39 @@ class Enemy {
                 this.parentBoss = null;
                 this.angleOffset = 0;
                 break;
+            case 'crowned_andy':
+                this.radius = 50;
+                this.hp = 30;
+                this.color = '#e53935';
+                this.scoreValue = 1500;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const caAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(caAngle) * this.speed;
+                this.vy = Math.sin(caAngle) * this.speed;
+                break;
+            case 'andy_no_crown':
+                this.radius = 40;
+                this.hp = 10;
+                this.color = '#e53935';
+                this.scoreValue = 500;
+                this.speed = 0.7;
+                this.fireTimer = 0;
+                const ancAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(ancAngle) * this.speed;
+                this.vy = Math.sin(ancAngle) * this.speed;
+                break;
+            case 'crown':
+                this.radius = 35;
+                this.hp = 10;
+                this.color = '#ffd700';
+                this.scoreValue = 500;
+                this.speed = 0.9;
+                this.fireTimer = 0;
+                const crAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(crAngle) * this.speed;
+                this.vy = Math.sin(crAngle) * this.speed;
+                break;
         }
 
         // Global speed scaling to make the game feel fast and arcade-like
@@ -2214,6 +2278,82 @@ class Enemy {
                     enemies.push(smallWig);
                 }
                 window.audio.playLordsGrumble();
+            }
+        }
+        else if (this.type === 'crowned_andy') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2000) {
+                this.fireTimer = 0;
+                const types = ['gravy', 'lager', 'chips'];
+                const projType = types[Math.floor(Math.random() * types.length)];
+                if (player) {
+                    const dx = player.x - this.x;
+                    const dy = player.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 5) {
+                        const bulletSpeed = (2.4 + currentWave * 0.04) * 1.6;
+                        const vx = (dx / dist) * bulletSpeed;
+                        const vy = (dy / dist) * bulletSpeed;
+                        enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', projType));
+                    }
+                }
+            }
+        }
+        else if (this.type === 'andy_no_crown') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2500) {
+                this.fireTimer = 0;
+                const types = ['lager', 'chips'];
+                const projType = types[Math.floor(Math.random() * types.length)];
+                if (player) {
+                    const dx = player.x - this.x;
+                    const dy = player.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 5) {
+                        const bulletSpeed = (2.6 + currentWave * 0.04) * 1.6;
+                        const vx = (dx / dist) * bulletSpeed;
+                        const vy = (dy / dist) * bulletSpeed;
+                        enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', projType));
+                    }
+                }
+            }
+        }
+        else if (this.type === 'crown') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 1800) {
+                this.fireTimer = 0;
+                if (player) {
+                    const dx = player.x - this.x;
+                    const dy = player.y - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist > 5) {
+                        const bulletSpeed = (2.8 + currentWave * 0.04) * 1.6;
+                        const vx = (dx / dist) * bulletSpeed;
+                        const vy = (dy / dist) * bulletSpeed;
+                        enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'gravy'));
+                    }
+                }
             }
         }
         else if (this.type === 'tooth') {
@@ -3283,6 +3423,27 @@ class Enemy {
             drawImagePreservingAspect(ursulaImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'crowned_andy') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(andyCrownedImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'andy_no_crown') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 200) * 0.05;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(andyImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'crown') {
+            ctx.save();
+            const wobble = Math.sin(Date.now() / 150) * 0.1;
+            ctx.rotate(wobble);
+            drawImagePreservingAspect(crownImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'evil_keir') {
             ctx.save();
             if (this.spawnTimer !== undefined && this.spawnTimer > 0) {
@@ -3693,7 +3854,7 @@ function spawnKeirLayer(layerNum, count) {
 }
 
 function getWaveName(waveNum) {
-    const layoutWave = 1 + ((waveNum - 1) % 17);
+    const layoutWave = 1 + ((waveNum - 1) % 18);
     if (layoutWave === 1) return "TORY COLLAPSE";
     if (layoutWave === 2) return "REFORM BOOZE UP";
     if (layoutWave === 3) return "THE LORDS ARE REVOLTING";
@@ -3711,6 +3872,7 @@ function getWaveName(waveNum) {
     if (layoutWave === 15) return "LONDONCENTRIC";
     if (layoutWave === 16) return "DON'T MENTION EUROPE";
     if (layoutWave === 17) return "HIS GREATEST FOE";
+    if (layoutWave === 18) return "THE KING IN THE NORTH";
     return "";
 }
 
@@ -3738,7 +3900,7 @@ function spawnWave() {
         return newEnemy;
     };
 
-    const layoutWave = 1 + ((currentWave - 1) % 17);
+    const layoutWave = 1 + ((currentWave - 1) % 18);
 
     // Design waves according to user requirements
     if (layoutWave === 1) {
@@ -4046,10 +4208,15 @@ function spawnWave() {
         spawnKeirLayer(3, 8);
         spawnedLayerCount = 4;
     }
+    else if (layoutWave === 18) {
+        // Wave 18 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
+        const boss = new Enemy(ARENA_WIDTH / 2, 160, 'crowned_andy');
+        enemies.push(boss);
+    }
 
     else {
-        // Wave 18+: Endless scaling mix with party isolation (only one party logo type per wave)
-        const scalar = 1 + (currentWave - 17) * 0.15;
+        // Wave 19+: Endless scaling mix with party isolation (only one party logo type per wave)
+        const scalar = 1 + (currentWave - 18) * 0.15;
         const totalParty = Math.floor(8 * scalar);
         const totalNeutrals = Math.floor(12 * scalar);
         
@@ -4099,7 +4266,7 @@ function spawnCollectible(forcedType) {
     const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
     let type = forcedType;
     if (!type) {
-        const layoutWave = 1 + ((currentWave - 1) % 17);
+        const layoutWave = 1 + ((currentWave - 1) % 18);
         if (layoutWave === 17) {
             const itemRand = Math.random();
             if (itemRand < 0.2) {
@@ -4339,7 +4506,7 @@ function updateGame(deltaTime) {
     }
 
     if (gameState === 'PLAYING') {
-        const layoutWave = 1 + ((currentWave - 1) % 17);
+        const layoutWave = 1 + ((currentWave - 1) % 18);
         if (layoutWave === 17) {
             const activeCount0 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
             const activeCount1 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
@@ -4349,22 +4516,18 @@ function updateGame(deltaTime) {
             if (activeCount0 === 0 && spawnedLayerCount < 24) {
                 spawnKeirLayer(0, 8);
                 spawnedLayerCount++;
-                showNotification("LAYER 0 RESPAWNED!");
             }
             if (activeCount1 === 0 && spawnedLayerCount < 24) {
                 spawnKeirLayer(1, 8);
                 spawnedLayerCount++;
-                showNotification("LAYER 1 RESPAWNED!");
             }
             if (activeCount2 === 0 && spawnedLayerCount < 24) {
                 spawnKeirLayer(2, 8);
                 spawnedLayerCount++;
-                showNotification("LAYER 2 RESPAWNED!");
             }
             if (activeCount3 === 0 && spawnedLayerCount < 24) {
                 spawnKeirLayer(3, 8);
                 spawnedLayerCount++;
-                showNotification("LAYER 3 RESPAWNED!");
             }
         }
     }
@@ -4484,6 +4647,20 @@ function collectItem(cIndex) {
                         mb.y += (Math.random() - 0.5) * 15;
                         enemies.push(mb);
                     }
+                } else if (enemy.type === 'crowned_andy') {
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    window.audio.playExplosion();
+                    triggerScreenShake(8, 250);
+                    
+                    const andyPart = new Enemy(enemy.x - 15, enemy.y, 'andy_no_crown');
+                    const crownPart = new Enemy(enemy.x + 15, enemy.y, 'crown');
+                    andyPart.vx = -1.0;
+                    andyPart.vy = 0.5;
+                    crownPart.vx = 1.0;
+                    crownPart.vy = -0.5;
+                    enemies.push(andyPart, crownPart);
                 } else {
                     enemies.splice(eIndex, 1);
                     score += enemy.scoreValue;
@@ -4623,6 +4800,20 @@ function checkCollisions() {
                             mb.y += (Math.random() - 0.5) * 15;
                             enemies.push(mb);
                         }
+                    } else if (enemy.type === 'crowned_andy') {
+                        enemies.splice(eIndex, 1);
+                        score += enemy.scoreValue;
+                        hudScore.textContent = String(score).padStart(6, '0');
+                        window.audio.playExplosion();
+                        triggerScreenShake(8, 250);
+                        
+                        const andyPart = new Enemy(enemy.x - 15, enemy.y, 'andy_no_crown');
+                        const crownPart = new Enemy(enemy.x + 15, enemy.y, 'crown');
+                        andyPart.vx = -1.0;
+                        andyPart.vy = 0.5;
+                        crownPart.vx = 1.0;
+                        crownPart.vy = -0.5;
+                        enemies.push(andyPart, crownPart);
                     } else {
                         enemies.splice(eIndex, 1);
                         score += enemy.scoreValue;
@@ -4673,7 +4864,7 @@ function checkCollisions() {
              if (collided) {
                 // Enemy dies!
                 // Bosses are not killed by collision; Starmer loses life but boss remains
-                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss', 'crowned_andy', 'andy_no_crown', 'crown'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
                 if (isBoss) {
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
@@ -4959,7 +5150,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.9', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.10', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
