@@ -60,7 +60,7 @@ if (isFirstTime || isHard) {
 let hiScore = getHighScoreCookie();
 let lives = 10; // Start with 10 lives
 let currentWave = 1;
-let destroyedLayerCount = 0;
+let spawnedLayerCount = 0;
 let waveStartTime = 0;
 let waveTransitionTimer = 0;
 let waveCompleteDelayTimer = 0;
@@ -3640,7 +3640,7 @@ function startGame() {
 }
 
 function getPatrolTarget(layerNum, index, total, spawnTimeMs) {
-    const isOuter = (layerNum === 0);
+    const isClockwise = (layerNum % 2 === 0);
     const layerIdx = index;
     const layerCount = total;
 
@@ -3651,50 +3651,30 @@ function getPatrolTarget(layerNum, index, total, spawnTimeMs) {
     
     let targetX, targetY;
     
-    if (isOuter) {
-        // Outer clockwise layer (Layer 0)
-        const inset = 40;
-        const minX = 10 + inset;
-        const maxX = ARENA_WIDTH - 10 - inset;
-        const minY = ARENA_CEILING + inset;
-        const maxY = ARENA_HEIGHT - 10 - inset;
-        const w = maxX - minX;
-        const h = maxY - minY;
-        const P = 2 * (w + h);
-        
-        const s = (baseOffset + layerIdx * (P / layerCount)) % P;
-        
-        if (s < w) {
-            targetX = minX + s; targetY = minY;
-        } else if (s < w + h) {
-            targetX = maxX; targetY = minY + (s - w);
-        } else if (s < 2 * w + h) {
-            targetX = maxX - (s - (w + h)); targetY = maxY;
-        } else {
-            targetX = minX; targetY = maxY - (s - (2 * w + h));
-        }
+    const inset = 35 + layerNum * 40;
+    const minX = 10 + inset;
+    const maxX = ARENA_WIDTH - 10 - inset;
+    const minY = ARENA_CEILING + inset;
+    const maxY = ARENA_HEIGHT - 10 - inset;
+    const w = maxX - minX;
+    const h = maxY - minY;
+    const P = 2 * (w + h);
+    
+    let s;
+    if (isClockwise) {
+        s = (baseOffset + layerIdx * (P / layerCount)) % P;
     } else {
-        // Inner counter-clockwise layer (Layer 1)
-        const inset = 85;
-        const minX = 10 + inset;
-        const maxX = ARENA_WIDTH - 10 - inset;
-        const minY = ARENA_CEILING + inset;
-        const maxY = ARENA_HEIGHT - 10 - inset;
-        const w = maxX - minX;
-        const h = maxY - minY;
-        const P = 2 * (w + h);
-        
-        const s = (((-baseOffset + layerIdx * (P / layerCount)) % P) + P) % P;
-        
-        if (s < w) {
-            targetX = minX + s; targetY = minY;
-        } else if (s < w + h) {
-            targetX = maxX; targetY = minY + (s - w);
-        } else if (s < 2 * w + h) {
-            targetX = maxX - (s - (w + h)); targetY = maxY;
-        } else {
-            targetX = minX; targetY = maxY - (s - (2 * w + h));
-        }
+        s = (((-baseOffset + layerIdx * (P / layerCount)) % P) + P) % P;
+    }
+    
+    if (s < w) {
+        targetX = minX + s; targetY = minY;
+    } else if (s < w + h) {
+        targetX = maxX; targetY = minY + (s - w);
+    } else if (s < 2 * w + h) {
+        targetX = maxX - (s - (w + h)); targetY = maxY;
+    } else {
+        targetX = minX; targetY = maxY - (s - (2 * w + h));
     }
     return { x: targetX, y: targetY };
 }
@@ -3730,7 +3710,7 @@ function getWaveName(waveNum) {
     if (layoutWave === 14) return "GREEN BOSS";
     if (layoutWave === 15) return "LONDONCENTRIC";
     if (layoutWave === 16) return "DON'T MENTION EUROPE";
-    if (layoutWave === 17) return "SPIRAL OF SELF-DESTRUCTION";
+    if (layoutWave === 17) return "HIS GREATEST FOE";
     return "";
 }
 
@@ -4057,11 +4037,14 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
     }
     else if (layoutWave === 17) {
-        // Wave 17 - Spiral of Self-destruction - Evil Keir spiral wave
-        destroyedLayerCount = 0;
+        // Wave 17 - His Greatest Foe - Evil Keir concentric layers
+        spawnedLayerCount = 0;
         waveStartTime = Date.now();
         spawnKeirLayer(0, 8);
         spawnKeirLayer(1, 8);
+        spawnKeirLayer(2, 8);
+        spawnKeirLayer(3, 8);
+        spawnedLayerCount = 4;
     }
 
     else {
@@ -4116,19 +4099,33 @@ function spawnCollectible(forcedType) {
     const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
     let type = forcedType;
     if (!type) {
-        const rand = Math.random();
-        if (currentWave > 15 && rand < 0.1) {
-            type = 'bonus_BB';
-        } else {
+        const layoutWave = 1 + ((currentWave - 1) % 17);
+        if (layoutWave === 17) {
             const itemRand = Math.random();
-            if (itemRand < 0.4) {
+            if (itemRand < 0.2) {
                 type = 'xvote';
-            } else if (itemRand < 0.8) {
+            } else if (itemRand < 0.4) {
                 type = 'rose';
-            } else if (itemRand < 0.9) {
+            } else if (itemRand < 0.7) {
                 type = 'three_way';
             } else {
                 type = 'bouncy_shots';
+            }
+        } else {
+            const rand = Math.random();
+            if (currentWave > 15 && rand < 0.1) {
+                type = 'bonus_BB';
+            } else {
+                const itemRand = Math.random();
+                if (itemRand < 0.4) {
+                    type = 'xvote';
+                } else if (itemRand < 0.8) {
+                    type = 'rose';
+                } else if (itemRand < 0.9) {
+                    type = 'three_way';
+                } else {
+                    type = 'bouncy_shots';
+                }
             }
         }
     }
@@ -4344,24 +4341,30 @@ function updateGame(deltaTime) {
     if (gameState === 'PLAYING') {
         const layoutWave = 1 + ((currentWave - 1) % 17);
         if (layoutWave === 17) {
-            const activeOuterCount = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
-            const activeInnerCount = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
+            const activeCount0 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
+            const activeCount1 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
+            const activeCount2 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 2).length;
+            const activeCount3 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 3).length;
             
-            if (destroyedLayerCount < 5) {
-                if (activeOuterCount === 0) {
-                    destroyedLayerCount++;
-                    if (destroyedLayerCount < 5) {
-                        spawnKeirLayer(0, 8);
-                        showNotification("OUTER LAYER RESPAWNED!");
-                    }
-                }
-                if (activeInnerCount === 0) {
-                    destroyedLayerCount++;
-                    if (destroyedLayerCount < 5) {
-                        spawnKeirLayer(1, 8);
-                        showNotification("INNER LAYER RESPAWNED!");
-                    }
-                }
+            if (activeCount0 === 0 && spawnedLayerCount < 24) {
+                spawnKeirLayer(0, 8);
+                spawnedLayerCount++;
+                showNotification("LAYER 0 RESPAWNED!");
+            }
+            if (activeCount1 === 0 && spawnedLayerCount < 24) {
+                spawnKeirLayer(1, 8);
+                spawnedLayerCount++;
+                showNotification("LAYER 1 RESPAWNED!");
+            }
+            if (activeCount2 === 0 && spawnedLayerCount < 24) {
+                spawnKeirLayer(2, 8);
+                spawnedLayerCount++;
+                showNotification("LAYER 2 RESPAWNED!");
+            }
+            if (activeCount3 === 0 && spawnedLayerCount < 24) {
+                spawnKeirLayer(3, 8);
+                spawnedLayerCount++;
+                showNotification("LAYER 3 RESPAWNED!");
             }
         }
     }
@@ -4956,7 +4959,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.9', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
