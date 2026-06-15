@@ -77,6 +77,8 @@ const hudScore = document.getElementById('hud-score');
 const hudHiScore = document.getElementById('hud-hiscore');
 const hudLives = document.getElementById('hud-lives');
 const hudWave = document.getElementById('hud-wave');
+const hudTimer = document.getElementById('hud-timer');
+let gameElapsedTime = 0; // Cumulative gameplay duration in ms
 
 // HUD Top Action Buttons
 const hudMuteBtn = document.getElementById('hud-btn-mute');
@@ -317,6 +319,12 @@ punkImg.src = 'punk.png';
 
 const speedCameraImg = new Image();
 speedCameraImg.src = 'speed_camera.png';
+
+const phoneboxImg = new Image();
+phoneboxImg.src = 'phonebox.png';
+
+const blackcabImg = new Image();
+blackcabImg.src = 'blackcab.png';
 
 function drawImagePreservingAspect(img, radius, scale = 1.0) {
     if (!img || !img.complete || img.naturalWidth === 0) return;
@@ -696,10 +704,10 @@ class Player {
                 this.catVy = (this.catVy / speed) * maxSpeed;
             }
 
-            // Cat shooting logic: shoots every 400ms at the nearest enemy
+            // Cat shooting logic: shoots matching player rate of fire and bonus powerups
             if (!this.catShootTimer) this.catShootTimer = 0;
             this.catShootTimer += deltaTime;
-            if (this.catShootTimer > 400) {
+            if (this.catShootTimer >= this.fireRate) {
                 this.catShootTimer = 0;
                 
                 // Find nearest enemy
@@ -716,9 +724,20 @@ class Player {
                 if (nearestEnemy) {
                     const angle = Math.atan2(nearestEnemy.y - this.catY, nearestEnemy.x - this.catX);
                     const speed = 7.0;
-                    const vx = Math.cos(angle) * speed;
-                    const vy = Math.sin(angle) * speed;
-                    bullets.push(new Bullet(this.catX, this.catY, vx, vy, 'player', 'laser'));
+                    const bulletType = this.bulletType || 'laser';
+                    
+                    if (this.threeWayTimer > 0) {
+                        const angles = [angle, angle - 0.314, angle + 0.314];
+                        angles.forEach(a => {
+                            const vx = Math.cos(a) * speed;
+                            const vy = Math.sin(a) * speed;
+                            bullets.push(new Bullet(this.catX, this.catY, vx, vy, 'player', bulletType));
+                        });
+                    } else {
+                        const vx = Math.cos(angle) * speed;
+                        const vy = Math.sin(angle) * speed;
+                        bullets.push(new Bullet(this.catX, this.catY, vx, vy, 'player', bulletType));
+                    }
                     window.audio.playShoot();
                 }
             }
@@ -1633,7 +1652,7 @@ class Enemy {
                 this.vy = Math.sin(embAngle) * this.speed;
                 break;
             case 'sadiq_miniboss':
-                this.radius = 30;
+                this.radius = 37.5;
                 this.hp = 10;
                 this.color = '#ff9800';
                 this.scoreValue = 500;
@@ -1644,7 +1663,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'lime_bike':
-                this.radius = 24;
+                this.radius = 30;
                 this.hp = 1;
                 this.color = '#00ff00';
                 this.scoreValue = 150;
@@ -1654,7 +1673,7 @@ class Enemy {
                 this.vy = Math.sin(limeBikeAngle) * this.speed;
                 break;
             case 'police_helmet':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 2;
                 this.color = '#0d47a1';
                 this.scoreValue = 200;
@@ -1664,7 +1683,7 @@ class Enemy {
                 this.vy = Math.sin(policeHelmetAngle) * this.speed;
                 break;
             case 'punk':
-                this.radius = 22;
+                this.radius = 27.5;
                 this.hp = 1;
                 this.color = '#e91e63';
                 this.scoreValue = 150;
@@ -1674,14 +1693,34 @@ class Enemy {
                 this.vy = Math.sin(punkAngle) * this.speed;
                 break;
             case 'speed_camera':
-                this.radius = 20;
+                this.radius = 25;
                 this.hp = 2;
                 this.color = '#ffd54f';
                 this.scoreValue = 250;
-                this.speed = 0;
-                this.vx = 0;
-                this.vy = 0;
-                this.fireTimer = Math.random() * 1000;
+                this.speed = 1.0 + currentWave * 0.03;
+                const speedCameraAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(speedCameraAngle) * this.speed;
+                this.vy = Math.sin(speedCameraAngle) * this.speed;
+                break;
+            case 'phonebox':
+                this.radius = 27.5;
+                this.hp = 2;
+                this.color = '#d32f2f';
+                this.scoreValue = 200;
+                this.speed = 1.0 + currentWave * 0.03;
+                const phoneboxAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(phoneboxAngle) * this.speed;
+                this.vy = Math.sin(phoneboxAngle) * this.speed;
+                break;
+            case 'blackcab':
+                this.radius = 32.5;
+                this.hp = 3;
+                this.color = '#212121';
+                this.scoreValue = 250;
+                this.speed = 1.3 + currentWave * 0.04;
+                const blackcabAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(blackcabAngle) * this.speed;
+                this.vy = Math.sin(blackcabAngle) * this.speed;
                 break;
             case 'tooth':
                 this.radius = 10;
@@ -2120,25 +2159,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (this.type === 'speed_camera') {
-            // Stationary turret shooting tickets (silver coins / lasers) at player
-            if (!this.fireTimer) this.fireTimer = 0;
-            this.fireTimer += deltaTime;
-            if (this.fireTimer > 1800) {
-                this.fireTimer = 0;
-                const dx = player.x - this.x;
-                const dy = player.y - this.y;
-                const dist = Math.hypot(dx, dy);
-                if (dist > 5) {
-                    const ticketSpeed = 3.5;
-                    const vx = (dx / dist) * ticketSpeed;
-                    const vy = (dy / dist) * ticketSpeed;
-                    enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'silver_coin'));
-                    window.audio.playShoot();
-                }
-            }
-        }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab'].includes(this.type)) {
             this.x += this.vx;
             this.y += this.vy;
             if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
@@ -2185,7 +2206,7 @@ class Enemy {
         ctx.lineWidth = 2.5;
 
         // Pulsating dashed gold ring around mini-bosses
-        if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss'].includes(this.type)) {
+        if (['zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss'].includes(this.type)) {
             ctx.save();
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 3;
@@ -3215,10 +3236,20 @@ class Enemy {
         }
         else if (this.type === 'speed_camera') {
             ctx.save();
-            // speed cameras are stationary but track the player direction slightly
-            const angle = Math.atan2(player.y - this.y, player.x - this.x) - Math.PI / 2;
-            ctx.rotate(angle * 0.15);
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
             drawImagePreservingAspect(speedCameraImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'phonebox') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(phoneboxImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'blackcab') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle * 1.5) * 0.15);
+            drawImagePreservingAspect(blackcabImg, this.radius);
             ctx.restore();
         }
         else if (this.type === 'tooth') {
@@ -3525,6 +3556,8 @@ function startGame() {
     bombSpawnCooldownTimer = 0;
     hudScore.textContent = '000000';
     hudWave.textContent = '1';
+    gameElapsedTime = 0;
+    if (hudTimer) hudTimer.textContent = '00:00';
     updateLivesUI();
 
     bullets = [];
@@ -3866,12 +3899,14 @@ function spawnWave() {
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 15) {
-        // Wave 15 - Londoncentric - Sadiq miniboss + lime bike, police helmet, punk, speed camera
+        // Wave 15 - Londoncentric - Sadiq miniboss + lime bike, police helmet, punk, speed camera, phonebox, blackcab
         spawnEnemy('sadiq_miniboss');
         for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
         for (let i = 0; i < 4; i++) spawnEnemy('police_helmet');
         for (let i = 0; i < 4; i++) spawnEnemy('punk');
         for (let i = 0; i < 2; i++) spawnEnemy('speed_camera');
+        for (let i = 0; i < 2; i++) spawnEnemy('phonebox');
+        for (let i = 0; i < 2; i++) spawnEnemy('blackcab');
     }
     else if (layoutWave === 16) {
         // Wave 16 - Euro Zone (shifted from wave 15) - Euro chompers € symbols (Labour themed) + newspapers
@@ -4106,6 +4141,15 @@ function gameLoop(timestamp) {
 }
 
 function updateGame(deltaTime) {
+    // Accumulate and update gameplay elapsed duration timer
+    gameElapsedTime += deltaTime;
+    if (hudTimer) {
+        const totalSeconds = Math.floor(gameElapsedTime / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        hudTimer.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
     if (player) {
         player.update(deltaTime);
     }
@@ -4734,7 +4778,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.9.8', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.9.9', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 

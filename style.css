@@ -383,6 +383,7 @@ body {
 .text-green { color: var(--neon-green); text-shadow: var(--glow-shadow-green); }
 .text-red { color: var(--neon-red); text-shadow: 0 0 8px rgba(255, 42, 42, 0.4); }
 .text-muted { color: #5a5a75; }
+.text-white { color: #ffffff; text-shadow: 0 0 8px rgba(255, 255, 255, 0.45); }
 
 /* Integrated Top Screen HUD */
 .screen-hud {
