@@ -119,255 +119,255 @@ let particles = [];
 
 // Preload Starmer face image
 const starmerImg = new Image();
-starmerImg.src = 'starmer_face.png';
+starmerImg.src = 'img/starmer_face.png';
 
 // Preload Lord wig image
 const lordWigImg = new Image();
-lordWigImg.src = 'lord_wig.png';
+lordWigImg.src = 'img/lord_wig.png';
 
 // Preload mini-boss images
 const zackImg = new Image();
-zackImg.src = 'zack_face.png';
+zackImg.src = 'img/zack_face.png';
 
 const kemiImg = new Image();
-kemiImg.src = 'kemi_face.png';
+kemiImg.src = 'img/kemi_face.png';
 
 const farageImg = new Image();
-farageImg.src = 'farage_face.png';
+farageImg.src = 'img/farage_face.png';
 
 const edImg = new Image();
-edImg.src = 'ed_face.png';
+edImg.src = 'img/ed_face.png';
 
 // Preload party logo images
 const toryLogoImg = new Image();
-toryLogoImg.src = 'tory_logo.png';
+toryLogoImg.src = 'img/tory_logo.png';
 
 const reformLogoImg = new Image();
-reformLogoImg.src = 'reform_logo.png';
+reformLogoImg.src = 'img/reform_logo.png';
 
 const greenLogoImg = new Image();
-greenLogoImg.src = 'green_logo.png';
+greenLogoImg.src = 'img/green_logo.png';
 
 const libdemLogoImg = new Image();
-libdemLogoImg.src = 'libdem_logo.png';
+libdemLogoImg.src = 'img/libdem_logo.png';
 
 // Preload Mandipede head image
 const mandipedeFaceImg = new Image();
-mandipedeFaceImg.src = 'mandipede_face.png';
+mandipedeFaceImg.src = 'img/mandipede_face.png';
 
 // Preload Euro sprite and cent images
 const euroSpriteImg = new Image();
-euroSpriteImg.src = 'euro_sprite.png';
+euroSpriteImg.src = 'img/euro_sprite.png';
 
 
 
 // Preload handcuffs image (replaced with cuffs)
 const handcuffsImg = new Image();
-handcuffsImg.src = 'cuffs.png';
+handcuffsImg.src = 'img/cuffs.png';
 
 // Preload dvds image
 const dvdsImg = new Image();
-dvdsImg.src = 'dvds.png';
+dvdsImg.src = 'img/dvds.png';
 
 // Preload paper plane image
 const paperPlaneImg = new Image();
-paperPlaneImg.src = 'paper_plane.png';
+paperPlaneImg.src = 'img/paper_plane.png';
 
 // Preload newly replaced sprites (banknotes, cigarettes, student cap)
 const banknotesImg = new Image();
-banknotesImg.src = 'banknotes.png';
+banknotesImg.src = 'img/banknotes.png';
 
 const cigarettesImg = new Image();
-cigarettesImg.src = 'cigarettes.png';
+cigarettesImg.src = 'img/cigarettes.png';
 
 const diplomaImg = new Image();
-diplomaImg.src = 'diploma.png';
+diplomaImg.src = 'img/diploma.png';
 
 const brainBossImg = new Image();
-brainBossImg.src = 'brain_boss.png';
+brainBossImg.src = 'img/brain_boss.png';
 
 const newspaperImg = new Image();
-newspaperImg.src = 'newspaper.png';
+newspaperImg.src = 'img/newspaper.png';
 
 const bloodBagImg = new Image();
-bloodBagImg.src = 'blood_bag.png';
+bloodBagImg.src = 'img/blood_bag.png';
 
 const breakfastImg = new Image();
-breakfastImg.src = 'breakfast.png';
+breakfastImg.src = 'img/breakfast.png';
 
 const lettuceImg = new Image();
-lettuceImg.src = 'lettuce.png';
+lettuceImg.src = 'img/lettuce.png';
 
 const mopHeadImg = new Image();
-mopHeadImg.src = 'mop_head.png';
+mopHeadImg.src = 'img/mop_head.png';
 
 const pigImg = new Image();
-pigImg.src = 'pig.png';
+pigImg.src = 'img/pig.png';
 
 const tabloidImg = new Image();
-tabloidImg.src = 'tabloid.png';
+tabloidImg.src = 'img/tabloid.png';
 
 const prisonGateImg = new Image();
-prisonGateImg.src = 'prison_gate.png';
+prisonGateImg.src = 'img/prison_gate.png';
 
 const englishFlagImg = new Image();
-englishFlagImg.src = 'english_flag.png';
+englishFlagImg.src = 'img/english_flag.png';
 
 const whatsappImg = new Image();
-whatsappImg.src = 'whatsapp.png';
+whatsappImg.src = 'img/whatsapp.png';
 
 const cannabisImg = new Image();
-cannabisImg.src = 'greens_cannabis.png';
+cannabisImg.src = 'img/greens_cannabis.png';
 
 const tieDyeImg = new Image();
-tieDyeImg.src = 'greens_tiedye.png';
+tieDyeImg.src = 'img/greens_tiedye.png';
 
 const labourLogoImg = new Image();
-labourLogoImg.src = 'labour_party_logo_sprite.png';
+labourLogoImg.src = 'img/labour_party_logo_sprite.png';
 
 const bonusRoseImg = new Image();
-bonusRoseImg.src = 'bonus_rose.png';
+bonusRoseImg.src = 'img/bonus_rose.png';
 
 const candyflossImg = new Image();
-candyflossImg.src = 'candyfloss.png';
+candyflossImg.src = 'img/candyfloss.png';
 
 const toffeeAppleImg = new Image();
-toffeeAppleImg.src = 'toffee_apple.png';
+toffeeAppleImg.src = 'img/toffee_apple.png';
 
 const partyHatImg = new Image();
-partyHatImg.src = 'party_hat.png';
+partyHatImg.src = 'img/party_hat.png';
 
 const partyRingsImg = new Image();
-partyRingsImg.src = 'party_rings.png';
+partyRingsImg.src = 'img/party_rings.png';
 
 const cakeImg = new Image();
-cakeImg.src = 'cake.png';
+cakeImg.src = 'img/cake.png';
 
 const ginImg = new Image();
-ginImg.src = 'gin.png';
+ginImg.src = 'img/gin.png';
 
 const sewageTankImg = new Image();
-sewageTankImg.src = 'sewage_tank.png';
+sewageTankImg.src = 'img/sewage_tank.png';
 
 const poopProjectileImg = new Image();
-poopProjectileImg.src = 'poop_projectile.png';
+poopProjectileImg.src = 'img/poop_projectile.png';
 
 const deadDuckImg = new Image();
-deadDuckImg.src = 'dead_duck.png';
+deadDuckImg.src = 'img/dead_duck.png';
 
 const deadFishImg = new Image();
-deadFishImg.src = 'dead_fish.png';
+deadFishImg.src = 'img/dead_fish.png';
 
 const toxicJarImg = new Image();
-toxicJarImg.src = 'toxic_jar.png';
+toxicJarImg.src = 'img/toxic_jar.png';
 
 const sandalsImg = new Image();
-sandalsImg.src = 'sandals.png';
+sandalsImg.src = 'img/sandals.png';
 
 const avocadoImg = new Image();
-avocadoImg.src = 'avocado_on_toast.png';
+avocadoImg.src = 'img/avocado_on_toast.png';
 
 const oatMilkImg = new Image();
-oatMilkImg.src = 'oat_milk.png';
+oatMilkImg.src = 'img/oat_milk.png';
 
 const flyImg = new Image();
-flyImg.src = 'fly.png';
+flyImg.src = 'img/fly.png';
 
 const toryCondomImg = new Image();
-toryCondomImg.src = 'tory_condom.png';
+toryCondomImg.src = 'img/tory_condom.png';
 
 const rubberRingImg = new Image();
-rubberRingImg.src = 'rubber_ring.png';
+rubberRingImg.src = 'img/rubber_ring.png';
 
 const teddyBearImg = new Image();
-teddyBearImg.src = 'teddy_bear.png';
+teddyBearImg.src = 'img/teddy_bear.png';
 
 const monsterCanImg = new Image();
-monsterCanImg.src = 'monster_can.png';
+monsterCanImg.src = 'img/monster_can.png';
 
 const orangeMalletImg = new Image();
-orangeMalletImg.src = 'orange_mallet.png';
+orangeMalletImg.src = 'img/orange_mallet.png';
 
 const trafficConeImg = new Image();
-trafficConeImg.src = 'traffic_cone.png';
+trafficConeImg.src = 'img/traffic_cone.png';
 
 const toteBagImg = new Image();
-toteBagImg.src = 'tote_bag.png';
+toteBagImg.src = 'img/tote_bag.png';
 
 const solarPanelImg = new Image();
-solarPanelImg.src = 'solar_panel.png';
+solarPanelImg.src = 'img/solar_panel.png';
 
 const sunscreenImg = new Image();
-sunscreenImg.src = 'sunscreen.png';
+sunscreenImg.src = 'img/sunscreen.png';
 
 const electricFanImg = new Image();
-electricFanImg.src = 'electric_fan.png';
+electricFanImg.src = 'img/electric_fan.png';
 
 const bonusBBImg = new Image();
-bonusBBImg.src = 'bonus_BB.png';
+bonusBBImg.src = 'img/bonus_BB.png';
 
 // Londoncentric sprites preloading
 const sadiqImg = new Image();
-sadiqImg.src = 'sadiq.png';
+sadiqImg.src = 'img/sadiq.png';
 
 const limeBikeImg = new Image();
-limeBikeImg.src = 'lime_bike.png';
+limeBikeImg.src = 'img/lime_bike.png';
 
 const policeHelmetImg = new Image();
-policeHelmetImg.src = 'police_helmet.png';
+policeHelmetImg.src = 'img/police_helmet.png';
 
 const punkImg = new Image();
-punkImg.src = 'punk.png';
+punkImg.src = 'img/punk.png';
 
 const speedCameraImg = new Image();
-speedCameraImg.src = 'speed_camera.png';
+speedCameraImg.src = 'img/speed_camera.png';
 
 const phoneboxImg = new Image();
-phoneboxImg.src = 'phonebox.png';
+phoneboxImg.src = 'img/phonebox.png';
 
 const blackcabImg = new Image();
-blackcabImg.src = 'blackcab.png';
+blackcabImg.src = 'img/blackcab.png';
 
 const vapeImg = new Image();
-vapeImg.src = 'vape.png';
+vapeImg.src = 'img/vape.png';
 
 const evilKeirImg = new Image();
-evilKeirImg.src = 'labour_keir_evil_sprite.png';
+evilKeirImg.src = 'img/labour_keir_evil_sprite.png';
 
 // Wave 16 "DON'T MENTION EUROPE" sprites preloading
 const ursulaImg = new Image();
-ursulaImg.src = 'ursula.png';
+ursulaImg.src = 'img/ursula.png';
 
 const bluePassportImg = new Image();
-bluePassportImg.src = 'blue_passport.png';
+bluePassportImg.src = 'img/blue_passport.png';
 
 const euroStarImg = new Image();
-euroStarImg.src = 'euro_star.png';
+euroStarImg.src = 'img/euro_star.png';
 
 const redTapeImg = new Image();
-redTapeImg.src = 'red_tape.png';
+redTapeImg.src = 'img/red_tape.png';
 
 const redWineImg = new Image();
-redWineImg.src = 'red_wine.png';
+redWineImg.src = 'img/red_wine.png';
 
 // Wave 18 "THE KING IN THE NORTH" sprites preloading
 const andyCrownedImg = new Image();
-andyCrownedImg.src = 'andy_crowned.png';
+andyCrownedImg.src = 'img/andy_crowned.png';
 
 const andyImg = new Image();
-andyImg.src = 'andy.png';
+andyImg.src = 'img/andy.png';
 
 const crownImg = new Image();
-crownImg.src = 'crown.png';
+crownImg.src = 'img/crown.png';
 
 const gravyImg = new Image();
-gravyImg.src = 'gravy.png';
+gravyImg.src = 'img/gravy.png';
 
 const lagerImg = new Image();
-lagerImg.src = 'lager.png';
+lagerImg.src = 'img/lager.png';
 
 const chipsImg = new Image();
-chipsImg.src = 'chips.png';
+chipsImg.src = 'img/chips.png';
 
 function drawImagePreservingAspect(img, radius, scale = 1.0) {
     if (!img || !img.complete || img.naturalWidth === 0) return;
@@ -5187,7 +5187,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.10', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.11', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
