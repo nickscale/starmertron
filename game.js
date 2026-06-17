@@ -658,7 +658,7 @@ class Player {
             dy *= 0.7071;
         }
 
-        const moveSpeed = this.speed + (currentWave - 1) * 0.05;
+        const moveSpeed = this.speed + (currentWave - 1) * 0.10;
         this.x += dx * moveSpeed;
         this.y += dy * moveSpeed;
 
@@ -1752,7 +1752,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'lime_bike':
-                this.radius = 45;
+                this.radius = 25;
                 this.hp = 1;
                 this.color = '#00ff00';
                 this.scoreValue = 150;
@@ -1762,7 +1762,7 @@ class Enemy {
                 this.vy = Math.sin(limeBikeAngle) * this.speed;
                 break;
             case 'police_helmet':
-                this.radius = 41.25;
+                this.radius = 25;
                 this.hp = 2;
                 this.color = '#0d47a1';
                 this.scoreValue = 200;
@@ -1772,7 +1772,7 @@ class Enemy {
                 this.vy = Math.sin(policeHelmetAngle) * this.speed;
                 break;
             case 'punk':
-                this.radius = 41.25;
+                this.radius = 25;
                 this.hp = 1;
                 this.color = '#e91e63';
                 this.scoreValue = 150;
@@ -1782,7 +1782,7 @@ class Enemy {
                 this.vy = Math.sin(punkAngle) * this.speed;
                 break;
             case 'speed_camera':
-                this.radius = 37.5;
+                this.radius = 25;
                 this.hp = 2;
                 this.color = '#ffd54f';
                 this.scoreValue = 250;
@@ -1792,7 +1792,7 @@ class Enemy {
                 this.vy = Math.sin(speedCameraAngle) * this.speed;
                 break;
             case 'phonebox':
-                this.radius = 41.25;
+                this.radius = 25;
                 this.hp = 2;
                 this.color = '#d32f2f';
                 this.scoreValue = 200;
@@ -1802,7 +1802,7 @@ class Enemy {
                 this.vy = Math.sin(phoneboxAngle) * this.speed;
                 break;
             case 'blackcab':
-                this.radius = 48.75;
+                this.radius = 25;
                 this.hp = 3;
                 this.color = '#212121';
                 this.scoreValue = 250;
@@ -2330,7 +2330,7 @@ class Enemy {
                     const dy = player.y - this.y;
                     const dist = Math.hypot(dx, dy);
                     if (dist > 5) {
-                        const bulletSpeed = (2.4 + currentWave * 0.04) * 1.6;
+                        const bulletSpeed = (2.4 + currentWave * 0.015) * 1.6;
                         const baseAngle = Math.atan2(dy, dx);
                         const types = ['gravy', 'lager', 'chips'];
                         const angles = [baseAngle - 0.22, baseAngle, baseAngle + 0.22];
@@ -2362,7 +2362,7 @@ class Enemy {
                     const dy = player.y - this.y;
                     const dist = Math.hypot(dx, dy);
                     if (dist > 5) {
-                        const bulletSpeed = (2.6 + currentWave * 0.04) * 1.6;
+                        const bulletSpeed = (2.6 + currentWave * 0.015) * 1.6;
                         const vx = (dx / dist) * bulletSpeed;
                         const vy = (dy / dist) * bulletSpeed;
                         enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', projType));
@@ -2386,7 +2386,7 @@ class Enemy {
                     const dy = player.y - this.y;
                     const dist = Math.hypot(dx, dy);
                     if (dist > 5) {
-                        const bulletSpeed = (2.8 + currentWave * 0.04) * 1.6;
+                        const bulletSpeed = (2.8 + currentWave * 0.015) * 1.6;
                         const vx = (dx / dist) * bulletSpeed;
                         const vy = (dy / dist) * bulletSpeed;
                         enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'gravy'));
@@ -2469,7 +2469,7 @@ class Enemy {
         const dist = Math.hypot(dx, dy);
         
         if (dist > 5) {
-            const bulletSpeed = (2.4 + currentWave * 0.04) * 1.6;
+             const bulletSpeed = (2.4 + currentWave * 0.015) * 1.6;
             const vx = (dx / dist) * bulletSpeed;
             const vy = (dy / dist) * bulletSpeed;
             enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy'));
@@ -4713,6 +4713,19 @@ function collectItem(cIndex) {
                 }
             }
         }
+
+        // Destroy destroyable projectiles (in enemyBullets)
+        for (let ebIndex = enemyBullets.length - 1; ebIndex >= 0; ebIndex--) {
+            const eBullet = enemyBullets[ebIndex];
+            if (['brown_peanut', 'diesel_smoke', 'gravy', 'lager', 'chips'].includes(eBullet.type)) {
+                const pColor = eBullet.type === 'brown_peanut' ? '#8b5a2b' : eBullet.type === 'gravy' ? '#6b3a1f' : eBullet.type === 'lager' ? '#daa520' : eBullet.type === 'chips' ? '#f5d442' : '#505050';
+                for (let i = 0; i < 6; i++) {
+                    particles.push(new Particle(eBullet.x, eBullet.y, pColor));
+                }
+                window.audio.playProjectileDestroy();
+                enemyBullets.splice(ebIndex, 1);
+            }
+        }
     } else if (col.type === 'three_way') {
         score += 500;
         hudScore.textContent = String(score).padStart(6, '0');
@@ -5188,7 +5201,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.12', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.13', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
