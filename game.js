@@ -1822,6 +1822,16 @@ class Enemy {
                 this.vx = Math.cos(ursulaAngle) * this.speed;
                 this.vy = Math.sin(ursulaAngle) * this.speed;
                 break;
+            case 'ursula_shield_star':
+                this.radius = 16;
+                this.hp = 2; // requires 2 shots to destroy
+                this.color = '#ffd700'; // Yellow
+                this.scoreValue = 100;
+                this.speed = 0; // movement controlled by orbit
+                this.orbitAngle = 0;
+                this.orbitRadius = 75;
+                this.parentUrsula = null;
+                break;
             case 'blue_passport':
                 this.radius = 24;
                 this.hp = 1;
@@ -1892,7 +1902,7 @@ class Enemy {
                 break;
             case 'andy_no_crown':
                 this.radius = 90;
-                this.hp = 10;
+                this.hp = 20;
                 this.color = '#e53935';
                 this.scoreValue = 500;
                 this.speed = 2.2;
@@ -1903,7 +1913,7 @@ class Enemy {
                 break;
             case 'crown':
                 this.radius = 53;
-                this.hp = 10;
+                this.hp = 20;
                 this.color = '#ffd700';
                 this.scoreValue = 500;
                 this.speed = 2.8;
@@ -2401,6 +2411,17 @@ class Enemy {
                 this.x = this.parentBoss.x + Math.cos(this.parentBoss.angle + this.angleOffset) * chompRadius;
                 this.y = this.parentBoss.y + Math.sin(this.parentBoss.angle + this.angleOffset) * chompRadius;
             } else {
+                enemies = enemies.filter(e => e !== this);
+            }
+        }
+        else if (this.type === 'ursula_shield_star') {
+            if (this.parentUrsula && enemies.includes(this.parentUrsula)) {
+                this.orbitAngle += 0.035; // speed of orbit rotation
+                this.x = this.parentUrsula.x + Math.cos(this.orbitAngle) * this.orbitRadius;
+                this.y = this.parentUrsula.y + Math.sin(this.orbitAngle) * this.orbitRadius;
+                this.angle += 0.05; // star visual rotation/spin
+            } else {
+                // Remove itself if Ursula is dead
                 enemies = enemies.filter(e => e !== this);
             }
         }
@@ -3459,6 +3480,12 @@ class Enemy {
             drawImagePreservingAspect(ursulaImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'ursula_shield_star') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(euroStarImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'crowned_andy') {
             ctx.save();
             const wobble = Math.sin(Date.now() / 200) * 0.05;
@@ -4228,7 +4255,20 @@ function spawnWave() {
     }
     else if (layoutWave === 16) {
         // Wave 16 - Don't Mention Europe - Ursula miniboss + blue passport, euro star, red tape, red wine
-        spawnEnemy('ursula_miniboss');
+        const ursula = spawnEnemy('ursula_miniboss');
+        ursula.hp = 20; // Ursula boss requires 20 hits once stars are gone
+        
+        // Spawn 12 stars orbiting Ursula
+        const numStars = 12;
+        for (let i = 0; i < numStars; i++) {
+            const orbitAngle = (i * Math.PI * 2) / numStars;
+            const star = new Enemy(ursula.x, ursula.y, 'ursula_shield_star');
+            star.parentUrsula = ursula;
+            star.orbitAngle = orbitAngle;
+            star.orbitRadius = 75;
+            enemies.push(star);
+        }
+
         for (let i = 0; i < 4; i++) spawnEnemy('blue_passport');
         for (let i = 0; i < 4; i++) spawnEnemy('euro_star');
         for (let i = 0; i < 4; i++) spawnEnemy('red_tape');
@@ -4655,6 +4695,17 @@ function collectItem(cIndex) {
                 }
             }
 
+            // Ursula shield star invulnerability handling for bomb
+            if (enemy.type === 'ursula_miniboss') {
+                const hasShieldStars = enemies.some(e => e.type === 'ursula_shield_star' && e.parentUrsula === enemy);
+                if (hasShieldStars) {
+                    for (let i = 0; i < 4; i++) {
+                        particles.push(new Particle(enemy.x, enemy.y, '#ffd700'));
+                    }
+                    continue;
+                }
+            }
+
             enemy.hp--;
             for (let i = 0; i < 3; i++) {
                 particles.push(new Particle(enemy.x, enemy.y, enemy.color));
@@ -4812,6 +4863,18 @@ function checkCollisions() {
                         bullets.splice(bIndex, 1);
                         for (let i = 0; i < 4; i++) {
                             particles.push(new Particle(bullet.x, bullet.y, '#00e5ff'));
+                        }
+                        break;
+                    }
+                }
+
+                // Ursula shield star invulnerability handling
+                if (enemy.type === 'ursula_miniboss') {
+                    const hasShieldStars = enemies.some(e => e.type === 'ursula_shield_star' && e.parentUrsula === enemy);
+                    if (hasShieldStars) {
+                        bullets.splice(bIndex, 1);
+                        for (let i = 0; i < 4; i++) {
+                            particles.push(new Particle(bullet.x, bullet.y, '#ffd700'));
                         }
                         break;
                     }
@@ -5199,7 +5262,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.14', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.15', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
