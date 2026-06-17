@@ -2796,7 +2796,7 @@ class Enemy {
             ctx.rotate(wobble);
             drawImagePreservingAspect(edImg, 20);
             ctx.restore();
-
+            ctx.restore(); // Restore scale/translate
         }
         else if (this.type === 'labour_enemy') {
             // Labour Square Block Logo (drift wobble)
@@ -3908,8 +3908,8 @@ function getWaveName(waveNum) {
     if (layoutWave === 14) return "GREEN BOSS";
     if (layoutWave === 15) return "LONDONCENTRIC";
     if (layoutWave === 16) return "DON'T MENTION EUROPE";
-    if (layoutWave === 17) return "HIS GREATEST FOE";
-    if (layoutWave === 18) return "THE KING IN THE NORTH";
+    if (layoutWave === 17) return "THE KING IN THE NORTH";
+    if (layoutWave === 18) return "HIS GREATEST FOE";
     return "";
 }
 
@@ -4236,7 +4236,12 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
     }
     else if (layoutWave === 17) {
-        // Wave 17 - His Greatest Foe - Evil Keir concentric layers
+        // Wave 17 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
+        const boss = new Enemy(ARENA_WIDTH / 2, 160, 'crowned_andy');
+        enemies.push(boss);
+    }
+    else if (layoutWave === 18) {
+        // Wave 18 - His Greatest Foe - Evil Keir concentric layers
         spawnedLayerCount = 0;
         waveStartTime = Date.now();
         spawnKeirLayer(0, 8);
@@ -4244,11 +4249,6 @@ function spawnWave() {
         spawnKeirLayer(2, 8);
         spawnKeirLayer(3, 8);
         spawnedLayerCount = 4;
-    }
-    else if (layoutWave === 18) {
-        // Wave 18 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
-        const boss = new Enemy(ARENA_WIDTH / 2, 160, 'crowned_andy');
-        enemies.push(boss);
     }
 
     else {
@@ -4304,7 +4304,7 @@ function spawnCollectible(forcedType) {
     let type = forcedType;
     if (!type) {
         const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 17) {
+        if (layoutWave === 18) {
             const itemRand = Math.random();
             if (itemRand < 0.2) {
                 type = 'xvote';
@@ -4544,7 +4544,7 @@ function updateGame(deltaTime) {
 
     if (gameState === 'PLAYING') {
         const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 17) {
+        if (layoutWave === 18) {
             const activeCount0 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
             const activeCount1 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
             const activeCount2 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 2).length;
