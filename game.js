@@ -1752,7 +1752,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'lime_bike':
-                this.radius = 25;
+                this.radius = 30;
                 this.hp = 1;
                 this.color = '#00ff00';
                 this.scoreValue = 150;
@@ -1802,7 +1802,7 @@ class Enemy {
                 this.vy = Math.sin(phoneboxAngle) * this.speed;
                 break;
             case 'blackcab':
-                this.radius = 25;
+                this.radius = 30;
                 this.hp = 3;
                 this.color = '#212121';
                 this.scoreValue = 250;
@@ -4794,7 +4794,7 @@ function collectItem(cIndex) {
     } else if (col.type === 'bonus_BB') {
         score += 1000;
         hudScore.textContent = String(score).padStart(6, '0');
-        showNotification("CAT ASSISTANT ACTIVE!");
+        showNotification("SAY HELLO TO MY LITTLE FRIEND");
         if (player) {
             player.catAssistantTimer = 10000; // 10 seconds duration
         }
@@ -5264,7 +5264,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.17', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.18', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
