@@ -412,6 +412,12 @@ body {
     letter-spacing: 1px;
 }
 
+.hud-break {
+    flex-basis: 100%;
+    height: 0;
+    display: none;
+}
+
 .hud-label {
     color: #8c8ca3;
 }
@@ -583,6 +589,10 @@ body {
         flex-wrap: wrap; /* Wrap elements to multiple lines if needed */
         justify-content: center;
         gap: 8px;
+    }
+    
+    .hud-break {
+        display: block;
     }
     
     .hud-item {

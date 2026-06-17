@@ -658,7 +658,7 @@ class Player {
             dy *= 0.7071;
         }
 
-        const moveSpeed = this.speed + (currentWave - 1) * 0.10;
+        const moveSpeed = this.speed + (currentWave - 1) * 0.05;
         this.x += dx * moveSpeed;
         this.y += dy * moveSpeed;
 
@@ -1901,7 +1901,7 @@ class Enemy {
                 this.vy = Math.sin(caAngle) * this.speed;
                 break;
             case 'andy_no_crown':
-                this.radius = 90;
+                this.radius = 75;
                 this.hp = 20;
                 this.color = '#e53935';
                 this.scoreValue = 500;
@@ -4274,6 +4274,7 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
         for (let i = 0; i < 4; i++) spawnEnemy('solar_panel');
         for (let i = 0; i < 4; i++) spawnEnemy('banknote');
+        for (let i = 0; i < 4; i++) spawnEnemy('euro_chomper');
     }
     else if (layoutWave === 17) {
         // Wave 17 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
@@ -5263,7 +5264,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.16', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.17', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
