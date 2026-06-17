@@ -2419,7 +2419,7 @@ class Enemy {
                 this.orbitAngle += 0.035; // speed of orbit rotation
                 this.x = this.parentUrsula.x + Math.cos(this.orbitAngle) * this.orbitRadius;
                 this.y = this.parentUrsula.y + Math.sin(this.orbitAngle) * this.orbitRadius;
-                this.angle += 0.05; // star visual rotation/spin
+                // Individually they should not spin
             } else {
                 // Remove itself if Ursula is dead
                 enemies = enemies.filter(e => e !== this);
@@ -4270,9 +4270,10 @@ function spawnWave() {
         }
 
         for (let i = 0; i < 4; i++) spawnEnemy('blue_passport');
-        for (let i = 0; i < 4; i++) spawnEnemy('euro_star');
         for (let i = 0; i < 4; i++) spawnEnemy('red_tape');
         for (let i = 0; i < 4; i++) spawnEnemy('red_wine');
+        for (let i = 0; i < 4; i++) spawnEnemy('solar_panel');
+        for (let i = 0; i < 4; i++) spawnEnemy('banknote');
     }
     else if (layoutWave === 17) {
         // Wave 17 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
@@ -5262,7 +5263,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.15', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.16', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
