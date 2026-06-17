@@ -2175,7 +2175,8 @@ class Enemy {
         }
         else if (this.type === 'ed_davey') {
             this.angle += 0.064;
-            this.y = (ARENA_CEILING + 60) + (Math.sin(this.angle) * 0.5 + 0.5) * (ARENA_HEIGHT * 0.7 - (ARENA_CEILING + 60));
+            const maxBounceY = ARENA_CEILING + (ARENA_HEIGHT - ARENA_CEILING - 10) * 0.7;
+            this.y = (ARENA_CEILING + 60) + (Math.sin(this.angle) * 0.5 + 0.5) * (maxBounceY - (ARENA_CEILING + 60));
             
             // Bounce side to side horizontally
             if (!this.vx) this.vx = 3.2;
@@ -5187,7 +5188,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.11', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.12', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
