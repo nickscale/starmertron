@@ -334,6 +334,9 @@ vapeImg.src = 'img/vape.png';
 const evilKeirImg = new Image();
 evilKeirImg.src = 'img/labour_keir_evil_sprite.png';
 
+const reformMercedesImg = new Image();
+reformMercedesImg.src = 'img/reform_mercedes.png';
+
 // Wave 16 "DON'T MENTION EUROPE" sprites preloading
 const ursulaImg = new Image();
 ursulaImg.src = 'img/ursula.png';
@@ -609,7 +612,7 @@ btnRestart.addEventListener('click', () => {
 // HUD overlay notification settings
 let notificationTimer = 0;
 let notificationText = "";
-function showNotification(text, duration = 110) {
+function showNotification(text, duration = 300) {
     notificationText = String(text).toUpperCase();
     notificationTimer = duration; // Slightly longer to read specific wave names
 }
@@ -3124,79 +3127,7 @@ class Enemy {
         else if (this.type === 'reform_mercedes') {
             const angle = Math.atan2(this.vy, this.vx);
             ctx.rotate(angle);
-
-            ctx.fillStyle = '#d32f2f';
-            ctx.strokeStyle = '#1a1a1a';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            ctx.roundRect(-42, -20, 84, 40, 8);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = '#b71c1c';
-            ctx.beginPath();
-            ctx.roundRect(-15, -17, 40, 34, 4);
-            ctx.fill();
-            ctx.stroke();
-
-            ctx.fillStyle = '#80deea';
-            ctx.beginPath();
-            ctx.moveTo(25, -16);
-            ctx.lineTo(25, 16);
-            ctx.lineTo(19, 14);
-            ctx.lineTo(19, -14);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.beginPath();
-            ctx.moveTo(-15, -15);
-            ctx.lineTo(-15, 15);
-            ctx.lineTo(-10, 13);
-            ctx.lineTo(-10, -13);
-            ctx.closePath();
-            ctx.fill();
-
-            ctx.fillStyle = '#e0e0e0';
-            ctx.fillRect(38, -10, 5, 20);
-            ctx.strokeStyle = '#757575';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(38, -10, 5, 20);
-            
-            ctx.strokeStyle = '#bdbdbd';
-            ctx.lineWidth = 3.5;
-            ctx.beginPath();
-            ctx.moveTo(42, -18);
-            ctx.quadraticCurveTo(44, 0, 42, 18);
-            ctx.stroke();
-
-            ctx.fillStyle = '#ffeb3b';
-            ctx.beginPath();
-            ctx.arc(38, -14, 4, 0, Math.PI * 2);
-            ctx.arc(38, 14, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#e0e0e0';
-            ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            ctx.arc(28, 0, 3.5, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(28, 0); ctx.lineTo(28, -3.5);
-            ctx.moveTo(28, 0); ctx.lineTo(25, 2);
-            ctx.moveTo(28, 0); ctx.lineTo(31, 2);
-            ctx.stroke();
-
-            ctx.fillStyle = '#212121';
-            ctx.fillRect(20, -23, 14, 4);
-            ctx.fillRect(20, 19, 14, 4);
-            ctx.fillRect(-28, -23, 14, 4);
-            ctx.fillRect(-28, 19, 14, 4);
-            
-            ctx.fillStyle = '#bdbdbd';
-            ctx.fillRect(24, -22, 6, 2);
-            ctx.fillRect(24, 20, 6, 2);
-            ctx.fillRect(-24, -22, 6, 2);
-            ctx.fillRect(-24, 20, 6, 2);
+            drawImagePreservingAspect(reformMercedesImg, this.radius);
         }
         else if (this.type === 'false_teeth') {
             ctx.save();
@@ -3930,8 +3861,8 @@ function getWaveName(waveNum) {
     if (layoutWave === 10) return "COMMONS DEBATE";
     if (layoutWave === 11) return "GREENS CLIMATE ANTICLIMAX";
     if (layoutWave === 12) return "TORY SLEAZE";
-    if (layoutWave === 13) return "REFORM BOSS";
-    if (layoutWave === 14) return "GREEN BOSS";
+    if (layoutWave === 13) return "ENGINE OF INDUSTRY";
+    if (layoutWave === 14) return "ZACK EATS, SHOOTS AND LEAVES";
     if (layoutWave === 15) return "LONDONCENTRIC";
     if (layoutWave === 16) return "DON'T MENTION EUROPE";
     if (layoutWave === 17) return "THE KING IN THE NORTH";
@@ -4212,7 +4143,7 @@ function spawnWave() {
         spawnEnemy('kemi_miniboss');
     }
     else if (layoutWave === 13) {
-        // Wave 13 - Reform Boss - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
+        // Wave 13 - "ENGINE OF INDUSTRY" - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
         const bossMerc = new Enemy(ARENA_WIDTH / 2, 160, 'reform_mercedes');
         enemies.push(bossMerc);
         for (let i = 0; i < 4; i++) spawnEnemy('reform');
@@ -4223,7 +4154,7 @@ function spawnWave() {
         spawnEnemy('farage_miniboss');
     }
     else if (layoutWave === 14) {
-        // Wave 14 - Greens Boss - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
+        // Wave 14 - "ZACK EATS, SHOOTS AND LEAVES" - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
         const gums = new Enemy(ARENA_WIDTH / 2, 160, 'false_teeth');
         enemies.push(gums);
 
@@ -4358,7 +4289,7 @@ function spawnCollectible(forcedType) {
             }
         } else {
             const rand = Math.random();
-            if (currentWave > 15 && rand < 0.1) {
+            if (currentWave > 15 && rand < 0.1 && !(player && player.catAssistantTimer > 0)) {
                 type = 'bonus_BB';
             } else {
                 const itemRand = Math.random();
@@ -5264,7 +5195,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.18', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.19', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
