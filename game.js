@@ -2758,22 +2758,21 @@ class Enemy {
         }
         else if (this.type === 'ed_davey') {
             // Elastic wavy yellow bungee cord (from start ceiling coordinate (startX, ARENA_CEILING) to translated position (0, 0))
-            ctx.restore(); // Exit local translation temporarily to draw rope relative to screen
             ctx.save();
             ctx.strokeStyle = '#ffd700'; // Lib Dem yellow
             ctx.lineWidth = 3.5;
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.beginPath();
-            const startY = ARENA_CEILING;
-            const endY = this.y;
+            const startX_local = this.startX - this.x;
+            const startY_local = ARENA_CEILING - this.y;
             const segments = 24;
-            const stepY = (endY - startY) / segments;
-            ctx.moveTo(this.startX, startY);
-            const stepX = (this.x - this.startX) / segments;
+            const stepY = -startY_local / segments;
+            const stepX = -startX_local / segments;
+            ctx.moveTo(startX_local, startY_local);
             for (let i = 1; i <= segments; i++) {
-                const cy = startY + i * stepY;
-                const cx = this.startX + i * stepX;
+                const cy = startY_local + i * stepY;
+                const cx = startX_local + i * stepX;
                 const amp = 8 * Math.sin((i / segments) * Math.PI * 8);
                 ctx.lineTo(cx + amp, cy);
             }
@@ -2781,7 +2780,6 @@ class Enemy {
             ctx.restore();
 
             ctx.save();
-            ctx.translate(this.x, this.y);
             ctx.scale(2.0, 2.0); // Bungee Ed Davey is giant size
 
             // Draw Ed Davey head
@@ -2797,7 +2795,7 @@ class Enemy {
             ctx.rotate(wobble);
             drawImagePreservingAspect(edImg, 20);
             ctx.restore();
-            ctx.restore(); // Restore scale/translate
+            ctx.restore(); // Restore scale
         }
         else if (this.type === 'labour_enemy') {
             // Labour Square Block Logo (drift wobble)
@@ -5201,7 +5199,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.13', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.14', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
