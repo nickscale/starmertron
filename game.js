@@ -1831,7 +1831,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'big_ben':
-                this.radius = 120; // large boss size
+                this.radius = 150; // large boss size
                 this.hp = 40; // robust boss
                 this.color = '#ffd700'; // Gold
                 this.scoreValue = 2000;
@@ -2388,7 +2388,6 @@ class Enemy {
                     const ex = this.x + Math.cos(angle) * (this.radius + 15);
                     const ey = this.y + Math.sin(angle) * (this.radius + 15);
                     const spawnedEnemy = new Enemy(ex, ey, spawnType);
-                    spawnedEnemy.noBounce = true;
                     spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
                     spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
                     enemies.push(spawnedEnemy);
@@ -4319,7 +4318,8 @@ function spawnWave() {
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 15) {
-        // Wave 15 - Londoncentric - only Big Ben boss + lime bike and blackcab enemies visible at startup
+        // Wave 15 - Londoncentric - Sadiq miniboss + Big Ben boss + lime bike and blackcab enemies visible at startup
+        spawnEnemy('sadiq_miniboss');
         const bigBen = new Enemy(ARENA_WIDTH / 2, 160, 'big_ben');
         enemies.push(bigBen);
         for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
@@ -5341,7 +5341,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.23', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.24', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
