@@ -639,6 +639,10 @@ body {
     .fullscreen-label {
         font-size: 0.85rem;
     }
+
+    .touch-controls-container {
+        padding: 0 10px;
+    }
 }
 
 @media (max-height: 580px) {

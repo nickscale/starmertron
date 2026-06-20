@@ -415,7 +415,11 @@ function resizeCanvas() {
 
     // Calculate aspect ratio clamped between 9:16 (tall) and 16:9 (wide)
     let aspect = width / height;
-    aspect = Math.max(9 / 16, Math.min(16 / 9, aspect));
+    let minAspect = 9 / 16;
+    if (width < 768) {
+        minAspect = 10.5 / 16;
+    }
+    aspect = Math.max(minAspect, Math.min(16 / 9, aspect));
 
     // Limit longest dimension to 1024 pixels to ensure consistent coordinate sizes and speeds
     if (aspect >= 1) {
@@ -1835,7 +1839,7 @@ class Enemy {
                 this.hp = 40; // robust boss
                 this.color = '#ffd700'; // Gold
                 this.scoreValue = 2000;
-                this.speed = 0.45;
+                this.speed = 0.85;
                 this.fireTimer = 0;
                 const benAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(benAngle) * this.speed;
@@ -2017,6 +2021,8 @@ class Enemy {
         if (layoutWave === 15) {
             if (['punk', 'lime_bike', 'phonebox', 'blackcab'].includes(this.type)) {
                 this.radius = this.radius * 1.1;
+            }
+            if (this.type !== 'big_ben' && this.type !== 'sadiq_miniboss') {
                 this.hp = 1;
             }
         }
@@ -5341,7 +5347,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.24', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.25', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
