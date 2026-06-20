@@ -489,6 +489,23 @@ window.addEventListener('keydown', (e) => {
         }
     }
 
+    // Secret Cat Assistant Cheat Mode (Shift+O key)
+    if (e.key.toLowerCase() === 'o' && e.shiftKey) {
+        if (player) {
+            if (player.catAssistantTimer > 0 && player.isCatAssistantCheat) {
+                player.catAssistantTimer = 0;
+                player.isCatAssistantCheat = false;
+                showNotification("CAT ASSISTANT: REMOVED");
+            } else {
+                player.catAssistantTimer = 99999999;
+                player.isCatAssistantCheat = true;
+                player.catX = player.x;
+                player.catY = player.y;
+                showNotification("SAY HELLO TO MY LITTLE FRIEND");
+            }
+        }
+    }
+
     // Secret Kill All Enemies Cheat Mode (Shift+L key) - Skips transition and immediately draws next level
     if (e.key.toLowerCase() === 'l' && e.shiftKey) {
         if (gameState === 'PLAYING') {
@@ -762,9 +779,11 @@ class Player {
         }
 
         if (this.catAssistantTimer > 0) {
-            this.catAssistantTimer -= deltaTime;
-            if (this.catAssistantTimer <= 0) {
-                this.catAssistantTimer = 0;
+            if (!this.isCatAssistantCheat) {
+                this.catAssistantTimer -= deltaTime;
+                if (this.catAssistantTimer <= 0) {
+                    this.catAssistantTimer = 0;
+                }
             }
 
             // Move independently
@@ -1111,6 +1130,8 @@ class Enemy {
         this.vx = 0;
         this.vy = 0;
         this.bobOffset = Math.random() * Math.PI * 2;
+        this.shouldRemove = false;
+        this.noBounce = false;
         
         switch (type) {
             case 'swarmer': 
@@ -1811,7 +1832,7 @@ class Enemy {
                 break;
             case 'big_ben':
                 this.radius = 120; // large boss size
-                this.hp = 25; // robust boss
+                this.hp = 40; // robust boss
                 this.color = '#ffd700'; // Gold
                 this.scoreValue = 2000;
                 this.speed = 0.45;
@@ -2007,9 +2028,12 @@ class Enemy {
     }
 
     update(deltaTime) {
-        this.angle += 0.03;
-
         const layoutWave = 1 + ((currentWave - 1) % 18);
+        if (layoutWave === 15) {
+            this.angle = Math.sin(Date.now() / 200) * 0.4;
+        } else {
+            this.angle += 0.03;
+        }
 
         // Wave 10 Commons Debate: only Labour and Tory logo enemies are stationary
         if (layoutWave === 10) {
@@ -2354,16 +2378,21 @@ class Enemy {
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             this.fireTimer += deltaTime;
-            if (this.fireTimer > 2500) {
+            if (this.fireTimer > 3500) {
                 this.fireTimer = 0;
-                const spawnType = Math.random() < 0.5 ? 'punk' : 'lime_bike';
-                const angle = Math.random() * Math.PI * 2;
-                const ex = this.x + Math.cos(angle) * (this.radius + 15);
-                const ey = this.y + Math.sin(angle) * (this.radius + 15);
-                const spawnedEnemy = new Enemy(ex, ey, spawnType);
-                spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
-                spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
-                enemies.push(spawnedEnemy);
+                const spawnTypes = ['punk', 'police_helmet', 'phonebox'];
+                const numEnemies = 8;
+                for (let i = 0; i < numEnemies; i++) {
+                    const angle = (i * Math.PI * 2) / numEnemies;
+                    const spawnType = spawnTypes[Math.floor(Math.random() * spawnTypes.length)];
+                    const ex = this.x + Math.cos(angle) * (this.radius + 15);
+                    const ey = this.y + Math.sin(angle) * (this.radius + 15);
+                    const spawnedEnemy = new Enemy(ex, ey, spawnType);
+                    spawnedEnemy.noBounce = true;
+                    spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
+                    spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
+                    enemies.push(spawnedEnemy);
+                }
                 if (window.audio && typeof window.audio.playBigBenChime === 'function') {
                     window.audio.playBigBenChime();
                 }
@@ -2558,12 +2587,21 @@ class Enemy {
             }
         }
         else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab', 'blue_passport', 'euro_star', 'red_tape', 'red_wine'].includes(this.type)) {
-            this.x += this.vx;
-            this.y += this.vy;
-            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
-            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
-            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
-            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+            if (this.noBounce) {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x < -this.radius - 20 || this.x > ARENA_WIDTH + this.radius + 20 ||
+                    this.y < ARENA_CEILING - this.radius - 20 || this.y > ARENA_HEIGHT + this.radius + 20) {
+                    this.shouldRemove = true;
+                }
+            } else {
+                this.x += this.vx;
+                this.y += this.vy;
+                if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+                else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+                if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+                else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+            }
         }
     }
 
@@ -4281,16 +4319,11 @@ function spawnWave() {
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 15) {
-        // Wave 15 - Londoncentric - Sadiq miniboss + Big Ben boss + lime bike, police helmet, punk, speed camera, phonebox, blackcab
-        spawnEnemy('sadiq_miniboss');
+        // Wave 15 - Londoncentric - only Big Ben boss + lime bike and blackcab enemies visible at startup
         const bigBen = new Enemy(ARENA_WIDTH / 2, 160, 'big_ben');
         enemies.push(bigBen);
         for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
-        for (let i = 0; i < 4; i++) spawnEnemy('police_helmet');
-        for (let i = 0; i < 4; i++) spawnEnemy('punk');
-        for (let i = 0; i < 2; i++) spawnEnemy('speed_camera');
-        for (let i = 0; i < 2; i++) spawnEnemy('phonebox');
-        for (let i = 0; i < 2; i++) spawnEnemy('blackcab');
+        for (let i = 0; i < 4; i++) spawnEnemy('blackcab');
     }
     else if (layoutWave === 16) {
         // Wave 16 - Don't Mention Europe - Ursula miniboss + blue passport, euro star, red tape, red wine
@@ -4596,6 +4629,7 @@ function updateGame(deltaTime) {
     enemyBullets = enemyBullets.filter(bullet => !bullet.isOutOfBounds());
 
     enemies.forEach(enemy => enemy.update(deltaTime));
+    enemies = enemies.filter(enemy => !enemy.shouldRemove);
 
     collectibles.forEach(col => col.update());
     collectibles = collectibles.filter(col => col.timeRemaining > 0);
@@ -5307,7 +5341,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.22', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.23', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
