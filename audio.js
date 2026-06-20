@@ -491,6 +491,31 @@ class RetroAudioEngine {
         });
     }
 
+    // Big Ben Boss: Low resonant chime sound
+    playBigBenChime() {
+        if (!this.ctx || this.isMuted) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+
+        // Westminster style bell: fundamental low E-key note (164.81Hz) + harmonics
+        const frequencies = [164.81, 329.63, 493.88, 739.99]; 
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.3, time);
+        gain.gain.exponentialRampToValueAtTime(0.001, time + 1.25);
+
+        frequencies.forEach((freq, index) => {
+            const osc = this.ctx.createOscillator();
+            osc.type = index === 0 ? 'sawtooth' : 'sine';
+            osc.frequency.setValueAtTime(freq, time);
+            osc.connect(gain);
+            osc.start(time);
+            osc.stop(time + 1.3);
+        });
+
+        gain.connect(this.masterVolume);
+    }
+
+
     // Play background looping retro synthesizer music
     startMusic() {
         if (this.isPlayingMusic) return;

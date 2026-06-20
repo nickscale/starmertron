@@ -341,6 +341,9 @@ evilKeirImg.src = 'img/labour_keir_evil_sprite.png';
 const reformMercedesImg = new Image();
 reformMercedesImg.src = 'img/reform_mercedes.png';
 
+const bigBenImg = new Image();
+bigBenImg.src = 'img/big_ben.png';
+
 // Wave 16 "DON'T MENTION EUROPE" sprites preloading
 const ursulaImg = new Image();
 ursulaImg.src = 'img/ursula.png';
@@ -1657,7 +1660,7 @@ class Enemy {
                 this.vy = Math.sin(tdAngle) * this.speed;
                 break;
             case 'reform_mercedes':
-                this.radius = 50;
+                this.radius = 60;
                 this.hp = 20;
                 this.color = '#d32f2f'; // Mercedes red
                 this.scoreValue = 1500;
@@ -1805,6 +1808,17 @@ class Enemy {
                 const sadiqAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(sadiqAngle) * this.speed;
                 this.vy = Math.sin(sadiqAngle) * this.speed;
+                break;
+            case 'big_ben':
+                this.radius = 60; // large boss size
+                this.hp = 25; // robust boss
+                this.color = '#ffd700'; // Gold
+                this.scoreValue = 2000;
+                this.speed = 0.45;
+                this.fireTimer = 0;
+                const benAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(benAngle) * this.speed;
+                this.vy = Math.sin(benAngle) * this.speed;
                 break;
             case 'lime_bike':
                 this.radius = 30;
@@ -1976,7 +1990,14 @@ class Enemy {
                 const crAngle = Math.random() * Math.PI * 2;
                 this.vx = Math.cos(crAngle) * this.speed;
                 this.vy = Math.sin(crAngle) * this.speed;
-                break;
+        }
+
+        const layoutWave = 1 + ((currentWave - 1) % 18);
+        if (layoutWave === 15) {
+            if (['punk', 'lime_bike', 'phonebox', 'blackcab'].includes(this.type)) {
+                this.radius = this.radius * 1.1;
+                this.hp = 1;
+            }
         }
 
         // Global speed scaling to make the game feel fast and arcade-like
@@ -2302,8 +2323,8 @@ class Enemy {
             // Spew cosmetic diesel smoke particles
             if (Math.random() < 0.2) {
                 const norm = Math.hypot(this.vx, this.vy) || 1;
-                const bx = this.x - (this.vx / norm) * 45;
-                const by = this.y - (this.vy / norm) * 45;
+                const bx = this.x - (this.vx / norm) * (this.radius * 0.9);
+                const by = this.y - (this.vy / norm) * (this.radius * 0.9);
                 particles.push(new Particle(bx, by, '#424242'));
                 particles.push(new Particle(bx, by, '#757575'));
             }
@@ -2321,6 +2342,30 @@ class Enemy {
                     const vy = (dy / dist) * smokeSpeed;
                     enemyBullets.push(new Bullet(this.x, this.y, vx, vy, 'enemy', 'diesel_smoke'));
                     window.audio.playMercedesEngine();
+                }
+            }
+        }
+        else if (this.type === 'big_ben') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 2500) {
+                this.fireTimer = 0;
+                const spawnType = Math.random() < 0.5 ? 'punk' : 'lime_bike';
+                const angle = Math.random() * Math.PI * 2;
+                const ex = this.x + Math.cos(angle) * (this.radius + 15);
+                const ey = this.y + Math.sin(angle) * (this.radius + 15);
+                const spawnedEnemy = new Enemy(ex, ey, spawnType);
+                spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
+                spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
+                enemies.push(spawnedEnemy);
+                if (window.audio && typeof window.audio.playBigBenChime === 'function') {
+                    window.audio.playBigBenChime();
                 }
             }
         }
@@ -3420,6 +3465,11 @@ class Enemy {
             drawImagePreservingAspect(sadiqImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'big_ben') {
+            ctx.save();
+            drawImagePreservingAspect(bigBenImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'lime_bike') {
             ctx.save();
             ctx.rotate(this.angle);
@@ -4231,8 +4281,10 @@ function spawnWave() {
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 15) {
-        // Wave 15 - Londoncentric - Sadiq miniboss + lime bike, police helmet, punk, speed camera, phonebox, blackcab
+        // Wave 15 - Londoncentric - Sadiq miniboss + Big Ben boss + lime bike, police helmet, punk, speed camera, phonebox, blackcab
         spawnEnemy('sadiq_miniboss');
+        const bigBen = new Enemy(ARENA_WIDTH / 2, 160, 'big_ben');
+        enemies.push(bigBen);
         for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
         for (let i = 0; i < 4; i++) spawnEnemy('police_helmet');
         for (let i = 0; i < 4; i++) spawnEnemy('punk');
@@ -4330,34 +4382,23 @@ function spawnCollectible(forcedType) {
     const cx = Math.random() * (ARENA_WIDTH - 80) + 40;
     const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
     let type = forcedType;
-    if (!type) {
-        const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 18) {
+    const layoutWave = 1 + ((currentWave - 1) % 18);
+    if (layoutWave === 18) {
+        type = Math.random() < 0.5 ? 'three_way' : 'bouncy_shots';
+    } else if (!type) {
+        const rand = Math.random();
+        if (currentWave > 15 && rand < 0.1 && !(player && player.catAssistantTimer > 0)) {
+            type = 'bonus_BB';
+        } else {
             const itemRand = Math.random();
-            if (itemRand < 0.2) {
+            if (itemRand < 0.4) {
                 type = 'xvote';
-            } else if (itemRand < 0.4) {
+            } else if (itemRand < 0.8) {
                 type = 'rose';
-            } else if (itemRand < 0.7) {
+            } else if (itemRand < 0.9) {
                 type = 'three_way';
             } else {
                 type = 'bouncy_shots';
-            }
-        } else {
-            const rand = Math.random();
-            if (currentWave > 15 && rand < 0.1 && !(player && player.catAssistantTimer > 0)) {
-                type = 'bonus_BB';
-            } else {
-                const itemRand = Math.random();
-                if (itemRand < 0.4) {
-                    type = 'xvote';
-                } else if (itemRand < 0.8) {
-                    type = 'rose';
-                } else if (itemRand < 0.9) {
-                    type = 'three_way';
-                } else {
-                    type = 'bouncy_shots';
-                }
             }
         }
     }
@@ -4980,7 +5021,7 @@ function checkCollisions() {
              if (collided) {
                 // Enemy dies!
                 // Bosses are not killed by collision; Starmer loses life but boss remains
-                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss', 'crowned_andy', 'andy_no_crown', 'crown'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
+                const isBoss = ['sewage_tank', 'ed_davey', 'exploding_brain', 'reform_mercedes', 'false_teeth', 'lord_wig_boss', 'zack_miniboss', 'kemi_miniboss', 'farage_miniboss', 'ed_miniboss', 'sadiq_miniboss', 'ursula_miniboss', 'crowned_andy', 'andy_no_crown', 'crown', 'big_ben'].includes(enemy.type) || (enemy.type === 'mandipede' && enemy.segmentType === 'head');
                 if (isBoss) {
                     for (let i = 0; i < 6; i++) {
                         particles.push(new Particle(player.x + (enemy.x - player.x) * 0.5, player.y + (enemy.y - player.y) * 0.5, enemy.color));
@@ -5266,7 +5307,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.20', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.21', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
