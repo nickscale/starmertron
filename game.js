@@ -1810,7 +1810,7 @@ class Enemy {
                 this.vy = Math.sin(sadiqAngle) * this.speed;
                 break;
             case 'big_ben':
-                this.radius = 60; // large boss size
+                this.radius = 120; // large boss size
                 this.hp = 25; // robust boss
                 this.color = '#ffd700'; // Gold
                 this.scoreValue = 2000;
@@ -5307,7 +5307,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.21', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.22', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
