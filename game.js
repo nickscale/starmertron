@@ -85,11 +85,13 @@ let gameElapsedTime = 0; // Cumulative gameplay duration in ms
 // HUD Top Action Buttons
 const hudMuteBtn = document.getElementById('hud-btn-mute');
 const hudPauseBtn = document.getElementById('hud-btn-pause');
+const hudEndBtn = document.getElementById('hud-btn-end');
 
 const uiOverlay = document.getElementById('ui-overlay');
 const screenStart = document.getElementById('screen-start');
 const screenGameOver = document.getElementById('screen-gameover');
 const screenPaused = document.getElementById('screen-paused');
+const screenConfirmEnd = document.getElementById('screen-confirm-end');
 
 const finalScore = document.getElementById('final-score');
 const finalWave = document.getElementById('final-wave');
@@ -98,6 +100,8 @@ const finalWave = document.getElementById('final-wave');
 const btnStart = document.getElementById('btn-start');
 const btnRestart = document.getElementById('btn-restart');
 const btnResume = document.getElementById('btn-resume');
+const btnConfirmEndYes = document.getElementById('btn-confirm-end-yes');
+const btnConfirmEndNo = document.getElementById('btn-confirm-end-no');
 
 // Touch controls input state
 let touchMoveX = 0;
@@ -568,6 +572,54 @@ btnResume.addEventListener('click', (e) => {
     e.stopPropagation();
     resumeGame();
 });
+
+if (hudEndBtn) {
+    hudEndBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+            if (gameState === 'PLAYING') {
+                window.audio.stopMusic();
+            }
+            gameState = 'PAUSED';
+            updateTouchControlsVisibility();
+            
+            // Hide normal pause menu if active
+            if (screenPaused) {
+                screenPaused.classList.add('hidden');
+                screenPaused.classList.remove('active');
+            }
+            
+            if (uiOverlay && screenConfirmEnd) {
+                uiOverlay.style.display = 'flex';
+                screenConfirmEnd.classList.remove('hidden');
+                screenConfirmEnd.classList.add('active');
+            }
+            if (hudPauseBtn) hudPauseBtn.textContent = "RESUME";
+        }
+    });
+}
+
+if (btnConfirmEndYes) {
+    btnConfirmEndYes.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (screenConfirmEnd) {
+            screenConfirmEnd.classList.add('hidden');
+            screenConfirmEnd.classList.remove('active');
+        }
+        gameOver();
+    });
+}
+
+if (btnConfirmEndNo) {
+    btnConfirmEndNo.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (screenConfirmEnd) {
+            screenConfirmEnd.classList.add('hidden');
+            screenConfirmEnd.classList.remove('active');
+        }
+        resumeGame();
+    });
+}
 
 btnStart.addEventListener('click', () => {
     window.audio.init();
@@ -3765,6 +3817,10 @@ function startGame() {
     screenGameOver.classList.remove('active');
     screenPaused.classList.add('hidden');
     screenPaused.classList.remove('active');
+    if (screenConfirmEnd) {
+        screenConfirmEnd.classList.add('hidden');
+        screenConfirmEnd.classList.remove('active');
+    }
 
     score = 0;
     lives = 10; // Start with 10 lives
@@ -4341,6 +4397,10 @@ function resumeGame() {
     uiOverlay.style.display = 'none';
     screenPaused.classList.add('hidden');
     screenPaused.classList.remove('active');
+    if (screenConfirmEnd) {
+        screenConfirmEnd.classList.add('hidden');
+        screenConfirmEnd.classList.remove('active');
+    }
     window.audio.startMusic();
     if (hudPauseBtn) hudPauseBtn.textContent = "PAUSE";
 }
@@ -4459,6 +4519,17 @@ function gameLoop(timestamp) {
     drawCanvasHUD();
 
     ctx.restore();
+
+    // Mask raw canvas letterbox margins with black to prevent transition/particles leak
+    ctx.fillStyle = '#000000';
+    if (offsetX > 0.5) {
+        ctx.fillRect(0, 0, Math.ceil(offsetX), canvas.height);
+        ctx.fillRect(Math.floor(offsetX + ARENA_WIDTH * scale), 0, Math.ceil(canvas.width - (offsetX + ARENA_WIDTH * scale)), canvas.height);
+    }
+    if (offsetY > 0.5) {
+        ctx.fillRect(0, 0, canvas.width, Math.ceil(offsetY));
+        ctx.fillRect(0, Math.floor(offsetY + ARENA_HEIGHT * scale), canvas.width, Math.ceil(canvas.height - (offsetY + ARENA_HEIGHT * scale)));
+    }
 
     requestAnimationFrame(gameLoop);
 }
@@ -4718,7 +4789,7 @@ function collectItem(cIndex) {
     } else if (col.type === 'bouncy_shots') {
         score += 500;
         hudScore.textContent = String(score).padStart(6, '0');
-        showNotification("BOUNCY SHOTS ACTIVE!");
+        showNotification("POLL BOUNCE ACTIVE!");
         if (player) {
             player.bouncyShotsTimer = 10000; // 10 seconds duration
         }
@@ -5195,7 +5266,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.19', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.20', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
