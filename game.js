@@ -1860,7 +1860,7 @@ class Enemy {
                 this.vy = Math.sin(benAngle) * this.speed;
                 break;
             case 'nose':
-                this.radius = 130; // giant nose boss
+                this.radius = 78; // nose boss (40% smaller)
                 this.hp = 40; // takes 40 hits
                 this.color = '#ff9999';
                 this.scoreValue = 2000;
@@ -2464,19 +2464,34 @@ class Enemy {
             else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
 
             this.fireTimer += deltaTime;
-            if (this.fireTimer > 3000) {
+            if (this.fireTimer > 4500) {
                 this.fireTimer = 0;
-                const numEnemies = 8;
-                for (let i = 0; i < numEnemies; i++) {
-                    const angle = (i * Math.PI * 2) / numEnemies;
-                    const ex = this.x + Math.cos(angle) * (this.radius + 15);
-                    const ey = this.y + Math.sin(angle) * (this.radius + 15);
-                    const spawnedEnemy = new Enemy(ex, ey, 'covid');
+                
+                // Spawn 4 covid enemies out of the left nostril
+                const lx = this.x - this.radius * 0.4;
+                const ly = this.y + this.radius * 0.3;
+                const leftAngles = [Math.PI * 0.6, Math.PI * 0.8, Math.PI * 1.0, Math.PI * 1.2];
+                leftAngles.forEach(angle => {
+                    const spawnedEnemy = new Enemy(lx, ly, 'covid');
                     spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
                     spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
                     enemies.push(spawnedEnemy);
-                }
-                if (window.audio && typeof window.audio.playShoot === 'function') {
+                });
+
+                // Spawn 4 covid enemies out of the right nostril
+                const rx = this.x + this.radius * 0.4;
+                const ry = this.y + this.radius * 0.3;
+                const rightAngles = [Math.PI * 0.4, Math.PI * 0.2, 0.0, -Math.PI * 0.2];
+                rightAngles.forEach(angle => {
+                    const spawnedEnemy = new Enemy(rx, ry, 'covid');
+                    spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
+                    spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
+                    enemies.push(spawnedEnemy);
+                });
+
+                if (window.audio && typeof window.audio.playSneeze === 'function') {
+                    window.audio.playSneeze();
+                } else if (window.audio && typeof window.audio.playShoot === 'function') {
                     window.audio.playShoot();
                 }
             }
@@ -4957,6 +4972,21 @@ function collectItem(cIndex) {
                         const py = enemy.y + (Math.random() - 0.5) * 120;
                         particles.push(new Particle(px, py, enemy.color));
                     }
+                } else if (enemy.type === 'nose') {
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    if (window.audio && typeof window.audio.playBigBenExplosion === 'function') {
+                        window.audio.playBigBenExplosion();
+                    } else {
+                        window.audio.playExplosion();
+                    }
+                    triggerScreenShake(12, 500);
+                    for (let i = 0; i < 40; i++) {
+                        const px = enemy.x + (Math.random() - 0.5) * 60;
+                        const py = enemy.y + (Math.random() - 0.5) * 80;
+                        particles.push(new Particle(px, py, enemy.color));
+                    }
                 } else {
                     enemies.splice(eIndex, 1);
                     score += enemy.scoreValue;
@@ -5471,7 +5501,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.26', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.27', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 

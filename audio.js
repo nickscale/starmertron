@@ -179,6 +179,49 @@ class RetroAudioEngine {
         }
     }
 
+    // Play retro sneeze sound for the Giant Nose boss
+    playSneeze() {
+        if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
+        this.resumeContext();
+        const time = this.ctx.currentTime;
+
+        // Inhale / ah- phase
+        const osc1 = this.ctx.createOscillator();
+        osc1.type = 'triangle';
+        osc1.frequency.setValueAtTime(200, time);
+        osc1.frequency.exponentialRampToValueAtTime(800, time + 0.15);
+
+        const gain1 = this.ctx.createGain();
+        gain1.gain.setValueAtTime(0.01, time);
+        gain1.gain.linearRampToValueAtTime(0.15, time + 0.15);
+
+        osc1.connect(gain1);
+        gain1.connect(this.masterVolume);
+        osc1.start(time);
+        osc1.stop(time + 0.15);
+
+        // Sneeze blast / -choo phase (filtered noise)
+        const noiseNode = this.ctx.createBufferSource();
+        noiseNode.buffer = this.noiseBuffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.Q.setValueAtTime(3.0, time + 0.15);
+        filter.frequency.setValueAtTime(3000, time + 0.15);
+        filter.frequency.exponentialRampToValueAtTime(600, time + 0.5);
+
+        const gain2 = this.ctx.createGain();
+        gain2.gain.setValueAtTime(0.7, time + 0.15);
+        gain2.gain.exponentialRampToValueAtTime(0.01, time + 0.5);
+
+        noiseNode.connect(filter);
+        filter.connect(gain2);
+        gain2.connect(this.masterVolume);
+
+        noiseNode.start(time + 0.15);
+        noiseNode.stop(time + 0.55);
+    }
+
     // Play projectile destruction sound (retro pop)
     playProjectileDestroy() {
         if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
