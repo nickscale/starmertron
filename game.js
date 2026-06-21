@@ -360,6 +360,20 @@ redTapeImg.src = 'img/red_tape.png';
 const redWineImg = new Image();
 redWineImg.src = 'img/red_wine.png';
 
+// Wave 17 "COVID REFLUX" sprites preloading
+const noseImg = new Image();
+noseImg.src = 'img/nose.png';
+
+const covidImg = new Image();
+covidImg.src = 'img/covid.png';
+
+const facemaskImg = new Image();
+facemaskImg.src = 'img/facemask.png';
+
+const clipboardImg = new Image();
+clipboardImg.src = 'img/clipboard.png';
+
+
 // Wave 18 "THE KING IN THE NORTH" sprites preloading
 const andyCrownedImg = new Image();
 andyCrownedImg.src = 'img/andy_crowned.png';
@@ -1845,6 +1859,44 @@ class Enemy {
                 this.vx = Math.cos(benAngle) * this.speed;
                 this.vy = Math.sin(benAngle) * this.speed;
                 break;
+            case 'nose':
+                this.radius = 130; // giant nose boss
+                this.hp = 40; // takes 40 hits
+                this.color = '#ff9999';
+                this.scoreValue = 2000;
+                this.speed = 0.5;
+                this.fireTimer = 0;
+                const noseAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(noseAngle) * this.speed;
+                this.vy = Math.sin(noseAngle) * this.speed;
+                break;
+            case 'covid':
+                this.radius = 20;
+                this.hp = 1;
+                this.color = '#39ff14';
+                this.scoreValue = 100;
+                this.speed = 3.0;
+                break;
+            case 'facemask':
+                this.radius = 25;
+                this.hp = 1;
+                this.color = '#00e5ff';
+                this.scoreValue = 150;
+                this.speed = 1.6;
+                const maskAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(maskAngle) * this.speed;
+                this.vy = Math.sin(maskAngle) * this.speed;
+                break;
+            case 'clipboard':
+                this.radius = 25;
+                this.hp = 1;
+                this.color = '#c0c0c0';
+                this.scoreValue = 150;
+                this.speed = 1.6;
+                const boardAngle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(boardAngle) * this.speed;
+                this.vy = Math.sin(boardAngle) * this.speed;
+                break;
             case 'lime_bike':
                 this.radius = 30;
                 this.hp = 1;
@@ -2017,8 +2069,8 @@ class Enemy {
                 this.vy = Math.sin(crAngle) * this.speed;
         }
 
-        const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 15) {
+        const layoutWave = 1 + ((currentWave - 1) % 19);
+        if (layoutWave === 16) {
             if (['punk', 'lime_bike', 'phonebox', 'blackcab'].includes(this.type)) {
                 this.radius = this.radius * 1.1;
             }
@@ -2034,8 +2086,8 @@ class Enemy {
     }
 
     update(deltaTime) {
-        const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 15) {
+        const layoutWave = 1 + ((currentWave - 1) % 19);
+        if (layoutWave === 16) {
             this.angle = Math.sin(Date.now() / 200) * 0.4;
         } else {
             this.angle += 0.03;
@@ -2403,6 +2455,32 @@ class Enemy {
                 }
             }
         }
+        else if (this.type === 'nose') {
+            this.x += this.vx;
+            this.y += this.vy;
+            if (this.x - this.radius <= 10) { this.x = this.radius + 11; this.vx = Math.abs(this.vx); }
+            else if (this.x + this.radius >= ARENA_WIDTH - 10) { this.x = ARENA_WIDTH - this.radius - 11; this.vx = -Math.abs(this.vx); }
+            if (this.y - this.radius <= ARENA_CEILING) { this.y = this.radius + ARENA_CEILING + 1; this.vy = Math.abs(this.vy); }
+            else if (this.y + this.radius >= ARENA_HEIGHT - 10) { this.y = ARENA_HEIGHT - this.radius - 11; this.vy = -Math.abs(this.vy); }
+
+            this.fireTimer += deltaTime;
+            if (this.fireTimer > 3000) {
+                this.fireTimer = 0;
+                const numEnemies = 8;
+                for (let i = 0; i < numEnemies; i++) {
+                    const angle = (i * Math.PI * 2) / numEnemies;
+                    const ex = this.x + Math.cos(angle) * (this.radius + 15);
+                    const ey = this.y + Math.sin(angle) * (this.radius + 15);
+                    const spawnedEnemy = new Enemy(ex, ey, 'covid');
+                    spawnedEnemy.vx = Math.cos(angle) * spawnedEnemy.speed;
+                    spawnedEnemy.vy = Math.sin(angle) * spawnedEnemy.speed;
+                    enemies.push(spawnedEnemy);
+                }
+                if (window.audio && typeof window.audio.playShoot === 'function') {
+                    window.audio.playShoot();
+                }
+            }
+        }
         else if (this.type === 'false_teeth') {
             if (!this.swingTimer) this.swingTimer = 0;
             this.swingTimer += 0.012;
@@ -2591,7 +2669,7 @@ class Enemy {
                 this.shootAtPlayer();
             }
         }
-        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab', 'blue_passport', 'euro_star', 'red_tape', 'red_wine'].includes(this.type)) {
+        else if (['tree_trunk', 'cat_enemy', 'cigarette', 'booze_enemy', 'candy_floss', 'toffee_apple', 'banknote', 'mini_brain', 'vape', 'breakfast', 'tshirt', 'grad_cap', 'padlocks', 'lettuce', 'mop_head', 'pig', 'tabloid', 'english_flag', 'whatsapp', 'cannabis', 'tie_dye', 'party_hat', 'party_rings', 'cake', 'dead_fish', 'dead_duck', 'toxic_jar', 'sandals', 'avocado_on_toast', 'oat_milk', 'fly', 'tory_condom', 'rubber_ring', 'teddy_bear', 'monster_can', 'orange_mallet', 'traffic_cone', 'handcuffs', 'poo', 'dvds', 'paper_plane', 'tote_bag', 'solar_panel', 'sunscreen', 'electric_fan', 'lime_bike', 'police_helmet', 'punk', 'speed_camera', 'phonebox', 'blackcab', 'blue_passport', 'euro_star', 'red_tape', 'red_wine', 'covid', 'facemask', 'clipboard'].includes(this.type)) {
             if (this.noBounce) {
                 this.x += this.vx;
                 this.y += this.vy;
@@ -3513,6 +3591,29 @@ class Enemy {
             drawImagePreservingAspect(bigBenImg, this.radius);
             ctx.restore();
         }
+        else if (this.type === 'nose') {
+            ctx.save();
+            drawImagePreservingAspect(noseImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'covid') {
+            ctx.save();
+            ctx.rotate(this.angle);
+            drawImagePreservingAspect(covidImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'facemask') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle) * 0.15);
+            drawImagePreservingAspect(facemaskImg, this.radius);
+            ctx.restore();
+        }
+        else if (this.type === 'clipboard') {
+            ctx.save();
+            ctx.rotate(Math.sin(this.angle) * 0.15);
+            drawImagePreservingAspect(clipboardImg, this.radius);
+            ctx.restore();
+        }
         else if (this.type === 'lime_bike') {
             ctx.save();
             ctx.rotate(this.angle);
@@ -3997,7 +4098,7 @@ function spawnKeirLayer(layerNum, count) {
 }
 
 function getWaveName(waveNum) {
-    const layoutWave = 1 + ((waveNum - 1) % 18);
+    const layoutWave = 1 + ((waveNum - 1) % 19);
     if (layoutWave === 1) return "TORY COLLAPSE";
     if (layoutWave === 2) return "REFORM BOOZE UP";
     if (layoutWave === 3) return "THE LORDS ARE REVOLTING";
@@ -4009,13 +4110,14 @@ function getWaveName(waveNum) {
     if (layoutWave === 9) return "DAVEY BUNGEE";
     if (layoutWave === 10) return "COMMONS DEBATE";
     if (layoutWave === 11) return "GREENS CLIMATE ANTICLIMAX";
-    if (layoutWave === 12) return "TORY SLEAZE";
-    if (layoutWave === 13) return "ENGINE OF INDUSTRY";
-    if (layoutWave === 14) return "ZACK EATS, SHOOTS AND LEAVES";
-    if (layoutWave === 15) return "LONDONCENTRIC";
-    if (layoutWave === 16) return "DON'T MENTION EUROPE";
-    if (layoutWave === 17) return "THE KING IN THE NORTH";
-    if (layoutWave === 18) return "HIS GREATEST FOE";
+    if (layoutWave === 12) return "COVID REFLUX";
+    if (layoutWave === 13) return "TORY SLEAZE";
+    if (layoutWave === 14) return "ENGINE OF INDUSTRY";
+    if (layoutWave === 15) return "ZACK EATS, SHOOTS AND LEAVES";
+    if (layoutWave === 16) return "LONDONCENTRIC";
+    if (layoutWave === 17) return "DON'T MENTION EUROPE";
+    if (layoutWave === 18) return "THE KING IN THE NORTH";
+    if (layoutWave === 19) return "HIS GREATEST FOE";
     return "";
 }
 
@@ -4043,7 +4145,7 @@ function spawnWave() {
         return newEnemy;
     };
 
-    const layoutWave = 1 + ((currentWave - 1) % 18);
+    const layoutWave = 1 + ((currentWave - 1) % 19);
 
     // Design waves according to user requirements
     if (layoutWave === 1) {
@@ -4280,7 +4382,14 @@ function spawnWave() {
         spawnEnemy('zack_miniboss');
     }
     else if (layoutWave === 12) {
-        // Wave 12 - Tory wave "Tory Sleaze" with banknotes, condoms, cuffs, gin, fly, poo, dvds + Kemi Badenoch mini bosses
+        // Wave 12 - "COVID REFLUX" - giant nose boss + facemask + clipboard
+        const noseBoss = new Enemy(ARENA_WIDTH / 2, 160, 'nose');
+        enemies.push(noseBoss);
+        for (let i = 0; i < 6; i++) spawnEnemy('facemask');
+        for (let i = 0; i < 6; i++) spawnEnemy('clipboard');
+    }
+    else if (layoutWave === 13) {
+        // Wave 13 - Tory wave "Tory Sleaze" with banknotes, condoms, cuffs, gin, fly, poo, dvds + Kemi Badenoch mini bosses
         for (let i = 0; i < 6; i++) spawnEnemy('tory');
         for (let i = 0; i < 7; i++) spawnEnemy('banknote');
         for (let i = 0; i < 2; i++) spawnEnemy('tory_condom');
@@ -4291,8 +4400,8 @@ function spawnWave() {
         for (let i = 0; i < 3; i++) spawnEnemy('dvds');
         spawnEnemy('kemi_miniboss');
     }
-    else if (layoutWave === 13) {
-        // Wave 13 - "ENGINE OF INDUSTRY" - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
+    else if (layoutWave === 14) {
+        // Wave 14 - "ENGINE OF INDUSTRY" - Mercedes car spewing diesel smoke + Reform arrow, cigarette, booze, vape, breakfast + Nigel Farage mini boss
         const bossMerc = new Enemy(ARENA_WIDTH / 2, 160, 'reform_mercedes');
         enemies.push(bossMerc);
         for (let i = 0; i < 4; i++) spawnEnemy('reform');
@@ -4302,8 +4411,8 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('breakfast');
         spawnEnemy('farage_miniboss');
     }
-    else if (layoutWave === 14) {
-        // Wave 14 - "ZACK EATS, SHOOTS AND LEAVES" - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
+    else if (layoutWave === 15) {
+        // Wave 15 - "ZACK EATS, SHOOTS AND LEAVES" - Set of False Teeth gums + 10 tooth sub-enemies + Green logo, tree, tshirt, cat + Zack mini boss
         const gums = new Enemy(ARENA_WIDTH / 2, 160, 'false_teeth');
         enemies.push(gums);
 
@@ -4323,16 +4432,16 @@ function spawnWave() {
         for (let i = 0; i < 2; i++) spawnEnemy('tie_dye');
         spawnEnemy('zack_miniboss');
     }
-    else if (layoutWave === 15) {
-        // Wave 15 - Londoncentric - Sadiq miniboss + Big Ben boss + lime bike and blackcab enemies visible at startup
+    else if (layoutWave === 16) {
+        // Wave 16 - Londoncentric - Sadiq miniboss + Big Ben boss + lime bike and blackcab enemies visible at startup
         spawnEnemy('sadiq_miniboss');
         const bigBen = new Enemy(ARENA_WIDTH / 2, 160, 'big_ben');
         enemies.push(bigBen);
         for (let i = 0; i < 4; i++) spawnEnemy('lime_bike');
         for (let i = 0; i < 4; i++) spawnEnemy('blackcab');
     }
-    else if (layoutWave === 16) {
-        // Wave 16 - Don't Mention Europe - Ursula miniboss + blue passport, euro star, red tape, red wine
+    else if (layoutWave === 17) {
+        // Wave 17 - Don't Mention Europe - Ursula miniboss + blue passport, euro star, red tape, red wine
         const ursula = spawnEnemy('ursula_miniboss');
         ursula.hp = 20; // Ursula boss requires 20 hits once stars are gone
         
@@ -4354,13 +4463,13 @@ function spawnWave() {
         for (let i = 0; i < 4; i++) spawnEnemy('banknote');
         for (let i = 0; i < 4; i++) spawnEnemy('euro_chomper');
     }
-    else if (layoutWave === 17) {
-        // Wave 17 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
+    else if (layoutWave === 18) {
+        // Wave 18 - "THE KING IN THE NORTH" - Crowned Andy Burnham boss
         const boss = new Enemy(ARENA_WIDTH / 2, 160, 'crowned_andy');
         enemies.push(boss);
     }
-    else if (layoutWave === 18) {
-        // Wave 18 - His Greatest Foe - Evil Keir concentric layers
+    else if (layoutWave === 19) {
+        // Wave 19 - His Greatest Foe - Evil Keir concentric layers
         spawnedLayerCount = 0;
         waveStartTime = Date.now();
         spawnKeirLayer(0, 8);
@@ -4371,8 +4480,8 @@ function spawnWave() {
     }
 
     else {
-        // Wave 19+: Endless scaling mix with party isolation (only one party logo type per wave)
-        const scalar = 1 + (currentWave - 18) * 0.15;
+        // Wave 20+: Endless scaling mix with party isolation (only one party logo type per wave)
+        const scalar = 1 + (currentWave - 19) * 0.15;
         const totalParty = Math.floor(8 * scalar);
         const totalNeutrals = Math.floor(12 * scalar);
         
@@ -4421,8 +4530,8 @@ function spawnCollectible(forcedType) {
     const cx = Math.random() * (ARENA_WIDTH - 80) + 40;
     const cy = Math.random() * (ARENA_HEIGHT - (ARENA_CEILING + 70)) + (ARENA_CEILING + 20);
     let type = forcedType;
-    const layoutWave = 1 + ((currentWave - 1) % 18);
-    if (layoutWave === 18) {
+    const layoutWave = 1 + ((currentWave - 1) % 19);
+    if (layoutWave === 19) {
         type = Math.random() < 0.5 ? 'three_way' : 'bouncy_shots';
     } else if (!type) {
         const rand = Math.random();
@@ -4667,8 +4776,8 @@ function updateGame(deltaTime) {
     }
 
     if (gameState === 'PLAYING') {
-        const layoutWave = 1 + ((currentWave - 1) % 18);
-        if (layoutWave === 18) {
+        const layoutWave = 1 + ((currentWave - 1) % 19);
+        if (layoutWave === 19) {
             const activeCount0 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 0).length;
             const activeCount1 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 1).length;
             const activeCount2 = enemies.filter(e => e.type === 'evil_keir' && e.keirLayer === 2).length;
@@ -4833,6 +4942,21 @@ function collectItem(cIndex) {
                     crownPart.vx = crownPart.speed;
                     crownPart.vy = -crownPart.speed * 0.5;
                     enemies.push(andyPart, crownPart);
+                } else if (enemy.type === 'big_ben') {
+                    enemies.splice(eIndex, 1);
+                    score += enemy.scoreValue;
+                    hudScore.textContent = String(score).padStart(6, '0');
+                    if (window.audio && typeof window.audio.playBigBenExplosion === 'function') {
+                        window.audio.playBigBenExplosion();
+                    } else {
+                        window.audio.playExplosion();
+                    }
+                    triggerScreenShake(12, 500);
+                    for (let i = 0; i < 40; i++) {
+                        const px = enemy.x + (Math.random() - 0.5) * 80;
+                        const py = enemy.y + (Math.random() - 0.5) * 120;
+                        particles.push(new Particle(px, py, enemy.color));
+                    }
                 } else {
                     enemies.splice(eIndex, 1);
                     score += enemy.scoreValue;
@@ -5347,7 +5471,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.25', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.26', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 

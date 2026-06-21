@@ -134,6 +134,51 @@ class RetroAudioEngine {
         osc.stop(time + 0.3);
     }
 
+    // Play big retro explosion sound for giant bosses
+    playBigBenExplosion() {
+        if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
+        this.resumeContext();
+
+        const time = this.ctx.currentTime;
+        
+        for (let i = 0; i < 3; i++) {
+            const delay = i * 0.15;
+            
+            const noiseNode = this.ctx.createBufferSource();
+            noiseNode.buffer = this.noiseBuffer;
+            
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(800 - i * 150, time + delay);
+            filter.frequency.exponentialRampToValueAtTime(40, time + delay + 0.8);
+            
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.9 - i * 0.1, time + delay);
+            gain.gain.linearRampToValueAtTime(0.01, time + delay + 0.85);
+            
+            noiseNode.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.masterVolume);
+            
+            const osc = this.ctx.createOscillator();
+            osc.type = i === 1 ? 'sawtooth' : 'triangle';
+            osc.frequency.setValueAtTime(90 - i * 15, time + delay);
+            osc.frequency.linearRampToValueAtTime(25, time + delay + 0.4);
+            
+            const oscGain = this.ctx.createGain();
+            oscGain.gain.setValueAtTime(0.6, time + delay);
+            oscGain.gain.linearRampToValueAtTime(0.01, time + delay + 0.4);
+            
+            osc.connect(oscGain);
+            oscGain.connect(this.masterVolume);
+            
+            noiseNode.start(time + delay);
+            noiseNode.stop(time + delay + 0.9);
+            osc.start(time + delay);
+            osc.stop(time + delay + 0.4);
+        }
+    }
+
     // Play projectile destruction sound (retro pop)
     playProjectileDestroy() {
         if (!this.ctx || this.isMuted || !this.noiseBuffer) return;
