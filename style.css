@@ -35,6 +35,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden; /* Hide screen scrollbars */
     padding: 0;
     margin: 0;
@@ -44,6 +45,7 @@ body {
 .screen-container {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     background: #000000;
     padding: 0;
     margin: 0;
@@ -52,6 +54,7 @@ body {
     align-items: center;
     overflow: hidden;
     position: relative;
+    touch-action: none;
 }
 
 /* CRT Screen styling (Flex container to separate HUD and Canvas) */
@@ -113,6 +116,7 @@ body {
     margin: 0;
     padding: 0;
     border: none;
+    touch-action: none;
 }
 
 /* Screen UI Overlay */
@@ -485,7 +489,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0 40px;
+    padding: 0 40px 0 5px;
     pointer-events: none;
     z-index: 25;
 }
@@ -521,6 +525,7 @@ body {
     position: absolute;
     pointer-events: none;
     user-select: none;
+    will-change: transform;
 }
 
 .touch-buttons-group {
@@ -641,7 +646,7 @@ body {
     }
 
     .touch-controls-container {
-        padding: 0 10px;
+        padding: 0 10px 0 0px;
     }
 }
 

@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=1.10.27">
+    <link rel="stylesheet" href="style.css?v=1.10.28">
 </head>
 <body>
 
@@ -43,7 +43,7 @@
                     <div class="hud-item hud-controls">
                         <button id="hud-btn-mute" class="hud-btn">MUTE</button>
                         <button id="hud-btn-pause" class="hud-btn">PAUSE</button>
-                        <button id="hud-btn-end" class="hud-btn">END GAME</button>
+                        <button id="hud-btn-end" class="hud-btn">QUIT</button>
                     </div>
                 </div>
             </div>
@@ -99,7 +99,7 @@
                     <div id="screen-confirm-end" class="screen-overlay hidden">
                         <h2 class="title-logo text-flash" style="color: var(--neon-pink); text-shadow: var(--glow-shadow-pink); font-size: 2.2rem; margin-bottom: 30px;">ARE YOU SURE?</h2>
                         <div style="display: flex; flex-direction: column; gap: 20px; align-items: center;">
-                            <button id="btn-confirm-end-yes" class="arcade-btn" style="width: 280px;">END GAME</button>
+                            <button id="btn-confirm-end-yes" class="arcade-btn" style="width: 280px;">QUIT</button>
                             <button id="btn-confirm-end-no" class="arcade-btn" style="background: linear-gradient(180deg, var(--neon-cyan) 0%, #008ba3 100%); border-color: #66e5ff; box-shadow: 0 6px 0 #005f70, 0 0 15px rgba(0, 229, 255, 0.4); width: 280px;">CANCEL</button>
                         </div>
                     </div>
@@ -121,7 +121,7 @@
     </div>
 
     <!-- Scripts -->
-    <script src="audio.js?v=1.10.27"></script>
-    <script src="game.js?v=1.10.27"></script>
+    <script src="audio.js?v=1.10.28"></script>
+    <script src="game.js?v=1.10.28"></script>
 </body>
 </html>

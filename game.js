@@ -7,6 +7,14 @@ let ARENA_CEILING = 0;
 let gameState = 'START'; // START, PLAYING, PAUSED, GAMEOVER
 let score = 0;
 
+function addScore(amount) {
+    if (player && player.isInvincibleCheat) return;
+    score += amount;
+    if (typeof hudScore !== 'undefined' && hudScore) {
+        hudScore.textContent = String(score).padStart(6, '0');
+    }
+}
+
 // Session cookie helpers for High Score
 function getHighScoreCookie() {
     const name = "starmertron_hiscore=";
@@ -1378,7 +1386,7 @@ class Enemy {
                 break;
             case 'sewage_tank':
                 this.radius = 45;
-                this.hp = 20;
+                this.hp = 30; // sewage boss (+10 HP)
                 this.color = '#795548';
                 this.scoreValue = 1000;
                 this.fireTimer = 0;
@@ -1850,7 +1858,7 @@ class Enemy {
                 break;
             case 'big_ben':
                 this.radius = 150; // large boss size
-                this.hp = 40; // robust boss
+                this.hp = 50; // robust boss (+10 HP)
                 this.color = '#ffd700'; // Gold
                 this.scoreValue = 2000;
                 this.speed = 0.85;
@@ -1861,7 +1869,7 @@ class Enemy {
                 break;
             case 'nose':
                 this.radius = 78; // nose boss (40% smaller)
-                this.hp = 40; // takes 40 hits
+                this.hp = 50; // takes 50 hits (+10 HP)
                 this.color = '#ff9999';
                 this.scoreValue = 2000;
                 this.speed = 0.5;
@@ -2521,8 +2529,7 @@ class Enemy {
                 enemies = enemies.filter(e => e !== this);
                 window.audio.playExplosion();
                 triggerScreenShake(8, 250);
-                score += this.scoreValue;
-                hudScore.textContent = String(score).padStart(6, '0');
+                addScore(this.scoreValue);
                 for (let i = 0; i < 30; i++) {
                     particles.push(new Particle(this.x, this.y, this.color));
                 }
@@ -4883,8 +4890,7 @@ function collectItem(cIndex) {
     }
 
     if (col.type === 'bomb') {
-        score += 250;
-        hudScore.textContent = String(score).padStart(6, '0');
+        addScore(250);
         showNotification("SCREEN BOMB TRIGGERED!");
         timeSinceLastKill = 0;
 
@@ -4931,8 +4937,7 @@ function collectItem(cIndex) {
                 
                 if (enemy.type === 'exploding_brain') {
                     enemies.splice(eIndex, 1);
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     window.audio.playExplosion();
                     triggerScreenShake(8, 250);
                     
@@ -4945,8 +4950,7 @@ function collectItem(cIndex) {
                     }
                 } else if (enemy.type === 'crowned_andy') {
                     enemies.splice(eIndex, 1);
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     window.audio.playExplosion();
                     triggerScreenShake(8, 250);
                     
@@ -4959,8 +4963,7 @@ function collectItem(cIndex) {
                     enemies.push(andyPart, crownPart);
                 } else if (enemy.type === 'big_ben') {
                     enemies.splice(eIndex, 1);
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     if (window.audio && typeof window.audio.playBigBenExplosion === 'function') {
                         window.audio.playBigBenExplosion();
                     } else {
@@ -4974,8 +4977,7 @@ function collectItem(cIndex) {
                     }
                 } else if (enemy.type === 'nose') {
                     enemies.splice(eIndex, 1);
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     if (window.audio && typeof window.audio.playBigBenExplosion === 'function') {
                         window.audio.playBigBenExplosion();
                     } else {
@@ -4989,8 +4991,7 @@ function collectItem(cIndex) {
                     }
                 } else {
                     enemies.splice(eIndex, 1);
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     window.audio.playExplosion();
                     triggerScreenShake(4, 150);
                     
@@ -5015,30 +5016,26 @@ function collectItem(cIndex) {
             }
         }
     } else if (col.type === 'three_way') {
-        score += 500;
-        hudScore.textContent = String(score).padStart(6, '0');
+        addScore(500);
         showNotification("TRIPLE LOCK GUARANTEE");
         if (player) {
             player.threeWayTimer = 8000; // 8 seconds duration
         }
     } else if (col.type === 'bouncy_shots') {
-        score += 500;
-        hudScore.textContent = String(score).padStart(6, '0');
+        addScore(500);
         showNotification("POLL BOUNCE ACTIVE!");
         if (player) {
             player.bouncyShotsTimer = 10000; // 10 seconds duration
         }
     } else if (col.type === 'bonus_BB') {
-        score += 1000;
-        hudScore.textContent = String(score).padStart(6, '0');
+        addScore(1000);
         showNotification("SAY HELLO TO MY LITTLE FRIEND");
         if (player) {
             player.catAssistantTimer = 10000; // 10 seconds duration
         }
     } else {
         const points = col.type === 'rose' ? 1000 : 500;
-        score += points;
-        hudScore.textContent = String(score).padStart(6, '0');
+        addScore(points);
         if (player) {
             player.bonusInvincibilityTimer = 3000;
             showNotification("INVINCIBLE! +3s");
@@ -5138,8 +5135,7 @@ function checkCollisions() {
                     }
                     if (enemy.type === 'exploding_brain') {
                         enemies.splice(eIndex, 1);
-                        score += enemy.scoreValue;
-                        hudScore.textContent = String(score).padStart(6, '0');
+                        addScore(enemy.scoreValue);
                         window.audio.playExplosion();
                         triggerScreenShake(8, 250);
                         
@@ -5153,8 +5149,7 @@ function checkCollisions() {
                         }
                     } else if (enemy.type === 'crowned_andy') {
                         enemies.splice(eIndex, 1);
-                        score += enemy.scoreValue;
-                        hudScore.textContent = String(score).padStart(6, '0');
+                        addScore(enemy.scoreValue);
                         window.audio.playExplosion();
                         triggerScreenShake(8, 250);
                         
@@ -5167,8 +5162,7 @@ function checkCollisions() {
                         enemies.push(andyPart, crownPart);
                     } else {
                         enemies.splice(eIndex, 1);
-                        score += enemy.scoreValue;
-                        hudScore.textContent = String(score).padStart(6, '0');
+                        addScore(enemy.scoreValue);
 
                         window.audio.playExplosion();
                         triggerScreenShake(4, 150);
@@ -5231,8 +5225,7 @@ function checkCollisions() {
                     }
                     enemies.splice(eIndex, 1);
                     timeSinceLastKill = 0;
-                    score += enemy.scoreValue;
-                    hudScore.textContent = String(score).padStart(6, '0');
+                    addScore(enemy.scoreValue);
                     
                     window.audio.playExplosion();
                     triggerScreenShake(4, 150);
@@ -5501,7 +5494,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.27', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.28', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
@@ -5566,6 +5559,7 @@ joystickBoundary.addEventListener('touchstart', (e) => {
 
 window.addEventListener('touchmove', (e) => {
     if (joystickTouchId === null) return;
+    e.preventDefault(); // Prevent scroll/pull-to-refresh when moving joystick
     const touch = getTouchById(e.touches, joystickTouchId);
     if (!touch) return;
 
@@ -5601,7 +5595,7 @@ function handleJoystickMove(clientX, clientY) {
         dragY = (dy / dist) * maxDragRadius;
     }
 
-    joystickKnob.style.transform = `translate(${dragX}px, ${dragY}px)`;
+    joystickKnob.style.transform = `translate3d(${dragX}px, ${dragY}px, 0)`;
 
     // Convert to normalized speed components (-1 to 1)
     touchMoveX = dragX / maxDragRadius;
@@ -5610,7 +5604,7 @@ function handleJoystickMove(clientX, clientY) {
 
 function resetJoystick() {
     joystickTouchId = null;
-    joystickKnob.style.transform = 'translate(0px, 0px)';
+    joystickKnob.style.transform = 'translate3d(0px, 0px, 0)';
     touchMoveX = 0;
     touchMoveY = 0;
 }
