@@ -5494,7 +5494,7 @@ function drawCanvasHUD() {
     ctx.fillStyle = '#BBB';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText('v1.10.28', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
+    ctx.fillText('v1.10.29', ARENA_WIDTH - 15, ARENA_HEIGHT - 15);
     ctx.restore();
 }
 
@@ -5597,9 +5597,15 @@ function handleJoystickMove(clientX, clientY) {
 
     joystickKnob.style.transform = `translate3d(${dragX}px, ${dragY}px, 0)`;
 
-    // Convert to normalized speed components (-1 to 1)
-    touchMoveX = dragX / maxDragRadius;
-    touchMoveY = dragY / maxDragRadius;
+    // Convert to instant normalized speed components (no gradual analog acceleration/inertia)
+    const deadzone = 6;
+    if (dist > deadzone) {
+        touchMoveX = dx / dist;
+        touchMoveY = dy / dist;
+    } else {
+        touchMoveX = 0;
+        touchMoveY = 0;
+    }
 }
 
 function resetJoystick() {
